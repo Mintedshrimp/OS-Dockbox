@@ -1,0 +1,6 @@
+{
+  "name": "OS Dockbox",
+  "description": "Rootless Podman container manager and Linux distribution environment for Android with NEON SIMD acceleration, live terminal, and ISO/VMDK container conversion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
