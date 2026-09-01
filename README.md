@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/your-username/os-dockbox/actions"><img src="https://img.shields.io/badge/CI%2FCD-Passing-brightgreen?style=flat-square&logo=githubactions" alt="CI/CD" /></a>
-  <a href="https://developer.android.com/about/versions/14"><img src="https://img.shields.io/badge/Android-API%2024%2B-blue?style=flat-square&logo=android" alt="Android API" /></a>
+  <a href="https://developer.android.com/about/versions/10"><img src="https://img.shields.io/badge/Android-10%20(API%2029)%20--%2017-blue?style=flat-square&logo=android" alt="Android 10 - 17" /></a>
   <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.0%2B-purple?style=flat-square&logo=kotlin" alt="Kotlin" /></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-emerald?style=flat-square&logo=jetpackcompose" alt="Compose M3" /></a>
   <a href="https://podman.io/"><img src="https://img.shields.io/badge/Podman-Rootless%205.0-red?style=flat-square&logo=podman" alt="Podman" /></a>

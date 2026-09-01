@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,7 +49,7 @@ fun HomeScreen(
         item {
             HeaderBar(
                 title = "OS Dockbox",
-                statusText = if (activeSystem != null) "SESSION LIVE" else "PODMAN READY",
+                statusText = if (activeSystem?.isRunning == true) "SESSION LIVE" else "PODMAN READY",
                 version = "v0.1.1"
             )
         }
@@ -71,8 +72,8 @@ fun HomeScreen(
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "Everything in one place",
-                        fontSize = 15.sp,
+                        text = "Device specs, hardware acceleration, and tool suite",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = UDroidTextSecondary
                     )
@@ -94,12 +95,28 @@ fun HomeScreen(
             }
         }
 
-        // Hardware & Low-Overhead Engine Status Card
+        // ==========================================
+        // TOP HALF: HARDWARE SPECS & SYSTEM STATUS
+        // ==========================================
+
+        // Section Title: CURRENT DEVICE SPECS
+        item {
+            Text(
+                text = "CURRENT DEVICE SPECS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = UDroidTextMuted,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 4.dp)
+            )
+        }
+
+        // Top Row: Device Model, OS & Architecture Card
         item {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 border = BorderStroke(1.dp, UDroidCardBorder)
@@ -112,47 +129,45 @@ fun HomeScreen(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(Color(0xFFE0F2FE)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Bolt,
-                                    contentDescription = "Engine",
+                                    imageVector = Icons.Default.PhoneAndroid,
+                                    contentDescription = "Device",
                                     tint = Color(0xFF0284C7),
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                             Column {
                                 Text(
-                                    text = "Podman Rootless Engine",
-                                    fontSize = 14.sp,
+                                    text = "${spec.deviceManufacturer} • ${spec.deviceModel}",
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = UDroidTextPrimary
                                 )
                                 Text(
-                                    text = "NEON SIMD Vector Acceleration",
+                                    text = "${spec.androidVersion} • ${spec.kernelVersion}",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF0284C7),
-                                    fontWeight = FontWeight.SemiBold
+                                    color = UDroidTextSecondary
                                 )
                             }
                         }
 
-                        // Badge
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFFDCFCE7))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "1.2% CPU tax",
+                                text = "aarch64",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF15803D)
@@ -160,49 +175,294 @@ fun HomeScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        SpecStatItem(label = "Isolation", value = "User Namespaces (crun)")
-                        SpecStatItem(label = "Architecture", value = "ARMv8.2-A / aarch64")
-                        SpecStatItem(label = "RAM Usage", value = "240 MB / 8 GB")
+                        SpecStatItem(label = "Instruction Set", value = "ARMv8.2-A Kryo")
+                        SpecStatItem(label = "ABI", value = "arm64-v8a (64-bit)")
+                        SpecStatItem(label = "Isolation", value = "User-NS (crun)")
                     }
                 }
             }
         }
 
-        // Section Title: EVERYTHING
+        // Just Underneath: RAM Usage Card
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, UDroidCardBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFDCFCE7)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Memory,
+                                    contentDescription = "RAM",
+                                    tint = Color(0xFF15803D),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "RAM Usage",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = UDroidTextPrimary
+                                )
+                                Text(
+                                    text = "${spec.ramUsedMb} MB used / ${spec.ramTotalMb} MB total",
+                                    fontSize = 12.sp,
+                                    color = UDroidTextSecondary
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "${((spec.ramUsedMb.toFloat() / spec.ramTotalMb.toFloat()) * 100).toInt()}% Used",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = UDroidGreen
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Progress Bar
+                    LinearProgressIndicator(
+                        progress = { spec.ramUsedMb.toFloat() / spec.ramTotalMb.toFloat() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = UDroidGreen,
+                        trackColor = Color(0xFFE2E8F0)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Free RAM: ${spec.memoryFreeGb} GB",
+                            fontSize = 11.sp,
+                            color = UDroidTextSecondary
+                        )
+                        Text(
+                            text = "OverlayFS: Active",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0284C7)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Left / Right Grid: CPU Usage, GPU Usage, Vulkan Version, OpenGL Version
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // CPU Usage Card
+                HardwareMetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Speed,
+                    iconBg = Color(0xFFEFF6FF),
+                    iconTint = Color(0xFF2563EB),
+                    title = "CPU Usage",
+                    primaryValue = "${spec.cpuUsagePercent}% Load",
+                    subtitle = "${spec.cpuCores} Cores (${spec.cpuFrequency})",
+                    tagText = "NEON SIMD",
+                    tagBg = Color(0xFFDCFCE7),
+                    tagTint = Color(0xFF15803D)
+                )
+
+                // GPU Usage Card
+                HardwareMetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.DeveloperBoard,
+                    iconBg = Color(0xFFFAF5FF),
+                    iconTint = Color(0xFF9333EA),
+                    title = "GPU Usage",
+                    primaryValue = "${spec.gpuUsagePercent}% Load",
+                    subtitle = spec.gpuRenderer,
+                    tagText = "Hardware Accel",
+                    tagBg = Color(0xFFF3E8FF),
+                    tagTint = Color(0xFF7E22CE)
+                )
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Vulkan API Version Card
+                HardwareMetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.AutoAwesome,
+                    iconBg = Color(0xFFFFF1F2),
+                    iconTint = Color(0xFFE11D48),
+                    title = "Vulkan API",
+                    primaryValue = spec.vulkanVersion,
+                    subtitle = "Hardware Compute & Raster",
+                    tagText = "VK 1.3 Ready",
+                    tagBg = Color(0xFFFFE4E6),
+                    tagTint = Color(0xFFBE123C)
+                )
+
+                // OpenGL ES Version Card
+                HardwareMetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Layers,
+                    iconBg = Color(0xFFFEF3C7),
+                    iconTint = Color(0xFFD97706),
+                    title = "OpenGL ES",
+                    primaryValue = spec.openGlVersion,
+                    subtitle = "VirGL 3D Pass-Through",
+                    tagText = "GLES 3.2",
+                    tagBg = Color(0xFFFEF3C7),
+                    tagTint = Color(0xFFB45309)
+                )
+            }
+        }
+
+        // ==========================================
+        // BOTTOM HALF: TOOLS & UTILITIES SECTION
+        // ==========================================
+
         item {
             Text(
-                text = "EVERYTHING",
-                fontSize = 12.sp,
+                text = "TOOLS & UTILITIES",
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = UDroidTextMuted,
                 letterSpacing = 1.sp,
-                modifier = Modifier.padding(start = 24.dp, top = 14.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 6.dp)
             )
         }
 
-        // Main Navigation Cards matching the screenshot
         item {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 HomeNavCard(
-                    icon = Icons.Default.List,
+                    icon = Icons.Default.Build,
                     iconBg = Color(0xFFEFF5F2),
                     iconTint = UDroidTextPrimary,
-                    title = "Linux systems",
-                    subtitle = activeSystem?.let { "${it.name}" } ?: "No systems active",
-                    badgeText = if (installed.isNotEmpty()) "Installed" else "Get started",
-                    badgeColor = if (installed.isNotEmpty()) Color(0xFF15803D) else UDroidTextSecondary,
-                    onClick = { viewModel.selectTab(MainTab.LINUX) }
+                    title = "Tools Suite",
+                    subtitle = "ISO Converter, Disk Builder, Docker Push & Port Bridge",
+                    badgeText = "5 Tools",
+                    badgeColor = UDroidGreen,
+                    onClick = { viewModel.selectTab(MainTab.TOOLS) }
+                )
+
+                HomeNavCard(
+                    icon = Icons.Default.Storage,
+                    iconBg = Color(0xFFFEF3C7),
+                    iconTint = Color(0xFFD97706),
+                    title = "Blank Disk Builder",
+                    subtitle = "Make blank .qcow2, .vhd, .img (EXT4, NTFS, 4K/64K)",
+                    badgeText = "Create",
+                    badgeColor = Color(0xFFD97706),
+                    onClick = {
+                        viewModel.selectTab(MainTab.TOOLS)
+                        viewModel.setShowCreateDiskDialog(true)
+                    }
+                )
+
+                HomeNavCard(
+                    icon = Icons.Default.Transform,
+                    iconBg = Color(0xFFE0F2FE),
+                    iconTint = Color(0xFF0284C7),
+                    title = "ISO & VMDK Converter",
+                    subtitle = "Extract rootfs from ISO, VMDK, VHD to OCI containers",
+                    badgeText = "Convert",
+                    badgeColor = Color(0xFF0284C7),
+                    onClick = {
+                        viewModel.selectTab(MainTab.TOOLS)
+                        viewModel.setShowConvertDialog(true)
+                    }
+                )
+
+                HomeNavCard(
+                    icon = Icons.Default.CloudUpload,
+                    iconBg = Color(0xFFDCFCE7),
+                    iconTint = Color(0xFF15803D),
+                    title = "Publish & Push Container",
+                    subtitle = "Push images to Docker Hub, Quay.io, or GitHub GHCR",
+                    badgeText = "Push",
+                    badgeColor = Color(0xFF15803D),
+                    onClick = {
+                        viewModel.selectTab(MainTab.TOOLS)
+                        viewModel.setShowPushDockerDialog(true)
+                    }
+                )
+            }
+        }
+
+        // Systems & Terminal Section
+        item {
+            Text(
+                text = "CONTAINERS & SESSIONS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = UDroidTextMuted,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 6.dp)
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                HomeNavCard(
+                    icon = Icons.Default.Dns,
+                    iconBg = Color(0xFFEFF5F2),
+                    iconTint = UDroidTextPrimary,
+                    title = "OS",
+                    subtitle = activeSystem?.let { "${it.name} (Active)" } ?: if (installed.isEmpty()) "Search & install OS containers" else "${installed.size} OS containers installed",
+                    badgeText = if (installed.isNotEmpty()) "${installed.size} Installed" else "Install",
+                    badgeColor = if (installed.isNotEmpty()) Color(0xFF15803D) else UDroidGreen,
+                    onClick = { viewModel.selectTab(MainTab.OS) }
                 )
 
                 HomeNavCard(
@@ -210,19 +470,10 @@ fun HomeScreen(
                     iconBg = Color(0xFFEFF5F2),
                     iconTint = UDroidTextPrimary,
                     title = "Terminal",
-                    subtitle = "Open a shell in the installed Linux system",
-                    badgeText = "Live",
-                    badgeColor = Color(0xFF15803D),
+                    subtitle = activeSystem?.let { "Live shell attached to ${it.name}" } ?: "Opens container shell when launched",
+                    badgeText = if (activeSystem?.isRunning == true) "Active" else "Ready",
+                    badgeColor = if (activeSystem?.isRunning == true) Color(0xFF15803D) else UDroidTextSecondary,
                     onClick = { viewModel.selectTab(MainTab.TERMINAL) }
-                )
-
-                HomeNavCard(
-                    icon = Icons.Default.Apps,
-                    iconBg = Color(0xFFEFF5F2),
-                    iconTint = UDroidTextPrimary,
-                    title = "Linux apps",
-                    subtitle = "Find and launch installed applications",
-                    onClick = { viewModel.selectTab(MainTab.APPS) }
                 )
 
                 HomeNavCard(
@@ -230,30 +481,8 @@ fun HomeScreen(
                     iconBg = Color(0xFFEFF5F2),
                     iconTint = UDroidTextPrimary,
                     title = "Desktop",
-                    subtitle = "Open the graphical Linux desktop (DISPLAY :0)",
+                    subtitle = "Open graphical Linux desktop (DISPLAY :0)",
                     onClick = { viewModel.showDesktop(true) }
-                )
-
-                HomeNavCard(
-                    icon = Icons.Default.Memory,
-                    iconBg = Color(0xFFEFF5F2),
-                    iconTint = UDroidTextPrimary,
-                    title = "Device compatibility",
-                    subtitle = "Runtime, architecture, and optional capabilities",
-                    badgeText = "6/6",
-                    badgeColor = Color(0xFF15803D),
-                    onClick = { showCompatibilityDialog = true }
-                )
-
-                HomeNavCard(
-                    icon = Icons.Default.Transform,
-                    iconBg = Color(0xFFEFF5F2),
-                    iconTint = UDroidTextPrimary,
-                    title = "ISO & VMDK Converter",
-                    subtitle = "Convert ISO, VMDK, VHD into OCI container images",
-                    badgeText = "New",
-                    badgeColor = Color(0xFF0284C7),
-                    onClick = { viewModel.selectTab(MainTab.CONVERT) }
                 )
 
                 HomeNavCard(
@@ -261,7 +490,7 @@ fun HomeScreen(
                     iconBg = Color(0xFFEFF5F2),
                     iconTint = UDroidTextPrimary,
                     title = "About OS Dockbox",
-                    subtitle = "App updates, supervisor journal, and project details",
+                    subtitle = "Runtime journal, supervisor logs, and engine details",
                     onClick = { viewModel.selectTab(MainTab.ABOUT) }
                 )
             }
@@ -274,6 +503,60 @@ fun HomeScreen(
             onDismiss = { showCompatibilityDialog = false },
             onRunBench = { viewModel.runNeonBenchmark() }
         )
+    }
+}
+
+@Composable
+fun HardwareMetricCard(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    title: String,
+    primaryValue: String,
+    subtitle: String,
+    tagText: String,
+    tagBg: Color,
+    tagTint: Color
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, UDroidCardBorder)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = icon, contentDescription = title, tint = iconTint, modifier = Modifier.size(18.dp))
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(tagBg)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(text = tagText, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = tagTint)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(text = title, fontSize = 11.sp, color = UDroidTextMuted, fontWeight = FontWeight.SemiBold)
+            Text(text = primaryValue, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = UDroidTextPrimary)
+            Text(text = subtitle, fontSize = 10.sp, color = UDroidTextSecondary, maxLines = 1)
+        }
     }
 }
 
@@ -292,14 +575,14 @@ fun HomeNavCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = UDroidCardSurface),
         border = BorderStroke(1.dp, UDroidCardBorder)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -310,7 +593,7 @@ fun HomeNavCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(42.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(iconBg),
                     contentAlignment = Alignment.Center
@@ -319,20 +602,20 @@ fun HomeNavCard(
                         imageVector = icon,
                         contentDescription = title,
                         tint = iconTint,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
                 Column {
                     Text(
                         text = title,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = UDroidTextPrimary
                     )
                     Text(
                         text = subtitle,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         color = UDroidTextSecondary,
                         maxLines = 1
                     )
@@ -346,7 +629,7 @@ fun HomeNavCard(
                 if (badgeText != null) {
                     Text(
                         text = badgeText,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = badgeColor
                     )
@@ -355,7 +638,7 @@ fun HomeNavCard(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                     contentDescription = "Navigate",
                     tint = UDroidTextMuted,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(13.dp)
                 )
             }
         }
@@ -404,57 +687,57 @@ fun CompatibilityDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Compatibility matrix and runtime capabilities on Android Linux kernel:",
+                    text = "Host Architecture: ${spec.architecture}",
                     fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Kernel: ${spec.kernelVersion}",
+                    fontSize = 12.sp,
                     color = UDroidTextSecondary
                 )
-
-                CompatCheckItem("ARMv8.2-A / aarch64 native ISA", "Supported (Native CPU execution)")
-                CompatCheckItem("ARM NEON 128-bit SIMD Accelerator", "Active (3.8x faster layer decompression)")
-                CompatCheckItem("Podman Rootless Namespaces", "Available (crun lightweight OCI)")
-                CompatCheckItem("PRoot Syscall Interception Fallback", "Available (Zero-root compatibility)")
-                CompatCheckItem("Storage Overlay Driver", "overlayfs supported (vfs fallback)")
-                CompatCheckItem("Seccomp BPF Syscall Filtering", "Configured (Safe unprivileged clone)")
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                OutlinedButton(
-                    onClick = onRunBench,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Speed, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Run Hardware SIMD Benchmark")
-                }
+                Text(
+                    text = "SIMD: ${spec.neonSimdStatus}",
+                    fontSize = 12.sp,
+                    color = Color(0xFF0284C7),
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Vulkan: ${spec.vulkanVersion}",
+                    fontSize = 12.sp,
+                    color = UDroidTextSecondary
+                )
+                Text(
+                    text = "OpenGL: ${spec.openGlVersion}",
+                    fontSize = 12.sp,
+                    color = UDroidTextSecondary
+                )
+                Text(
+                    text = "Rootless Engine: Podman 5.0.3 (crun)",
+                    fontSize = 12.sp,
+                    color = UDroidGreen,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         confirmButton = {
+            Button(
+                onClick = {
+                    onRunBench()
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = UDroidGreen)
+            ) {
+                Text("Run NEON SIMD Benchmark", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = UDroidGreen, fontWeight = FontWeight.Bold)
+                Text("Close", color = UDroidTextSecondary)
             }
         }
     )
-}
-
-@Composable
-fun CompatCheckItem(title: String, desc: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = "Pass",
-            tint = Color(0xFF15803D),
-            modifier = Modifier.size(18.dp)
-        )
-        Column {
-            Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = UDroidTextPrimary)
-            Text(text = desc, fontSize = 11.sp, color = UDroidTextSecondary)
-        }
-    }
 }

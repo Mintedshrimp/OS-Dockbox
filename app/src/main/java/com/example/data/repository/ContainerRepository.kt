@@ -38,14 +38,38 @@ class ContainerRepository(private val dao: ContainerDao) {
                     flavor = "Debian",
                     architecture = "aarch64",
                     engineType = "Podman Rootless",
-                    isInstalled = true,
-                    isRunning = true,
-                    isRecommended = false,
-                    desktopEnv = "Cinnamon",
-                    diskUsageMb = 840,
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = true,
+                    desktopEnv = "Cinnamon Desktop",
+                    diskUsageMb = 0,
                     portMappings = "8080:80, 2222:22, 5901:5901",
                     neonSimdEnabled = true,
-                    statusBadge = "Active"
+                    statusBadge = "Fast-Path NEON",
+                    author = "Debian Project",
+                    downloads = "4.2M",
+                    likes = "29.4k",
+                    popularity = "98%"
+                ),
+                ContainerSystemEntity(
+                    id = "ubuntu-2404-lts",
+                    name = "Ubuntu 24.04 LTS",
+                    version = "24.04 LTS (Noble Numbat)",
+                    flavor = "Ubuntu",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = true,
+                    desktopEnv = "GNOME / Terminal",
+                    diskUsageMb = 0,
+                    portMappings = "8080:80",
+                    neonSimdEnabled = true,
+                    statusBadge = "LTS Official",
+                    author = "Canonical",
+                    downloads = "9.1M",
+                    likes = "54.8k",
+                    popularity = "99%"
                 ),
                 ContainerSystemEntity(
                     id = "ubuntu-2204-lts",
@@ -56,12 +80,16 @@ class ContainerRepository(private val dao: ContainerDao) {
                     engineType = "Podman Rootless",
                     isInstalled = false,
                     isRunning = false,
-                    isRecommended = true,
+                    isRecommended = false,
                     desktopEnv = "Terminal-first",
                     diskUsageMb = 0,
                     portMappings = "8081:80",
                     neonSimdEnabled = true,
-                    statusBadge = "Recommended"
+                    statusBadge = "Stable LTS",
+                    author = "Canonical",
+                    downloads = "6.5M",
+                    likes = "36.2k",
+                    popularity = "97%"
                 ),
                 ContainerSystemEntity(
                     id = "alpine-322",
@@ -77,7 +105,11 @@ class ContainerRepository(private val dao: ContainerDao) {
                     diskUsageMb = 0,
                     portMappings = "3000:3000",
                     neonSimdEnabled = true,
-                    statusBadge = "Ultra-light"
+                    statusBadge = "Ultra-light (7MB)",
+                    author = "Alpine Devs",
+                    downloads = "14.2M",
+                    likes = "68.4k",
+                    popularity = "99%"
                 ),
                 ContainerSystemEntity(
                     id = "arch-linux",
@@ -89,95 +121,113 @@ class ContainerRepository(private val dao: ContainerDao) {
                     isInstalled = false,
                     isRunning = false,
                     isRecommended = false,
-                    desktopEnv = "Terminal-first",
+                    desktopEnv = "Pacman / CLI",
                     diskUsageMb = 0,
                     portMappings = "8000:8000",
                     neonSimdEnabled = true,
-                    statusBadge = "Rolling"
+                    statusBadge = "Rolling Release",
+                    author = "Arch Linux Team",
+                    downloads = "4.7M",
+                    likes = "42.1k",
+                    popularity = "97%"
                 ),
                 ContainerSystemEntity(
-                    id = "ubuntu-2004-lts",
-                    name = "Ubuntu 20.04 LTS",
-                    version = "20.04.6 LTS (Focal)",
-                    flavor = "Ubuntu",
+                    id = "fedora-40",
+                    name = "Fedora 40 Cloud",
+                    version = "40 (Container Base)",
+                    flavor = "Fedora",
                     architecture = "aarch64",
-                    engineType = "PRoot-Distro",
+                    engineType = "Podman Rootless",
                     isInstalled = false,
                     isRunning = false,
+                    isRecommended = false,
+                    desktopEnv = "DNF5 / CLI",
+                    diskUsageMb = 0,
+                    portMappings = "9090:9090",
+                    neonSimdEnabled = true,
+                    statusBadge = "Modern RPM",
+                    author = "Red Hat / Fedora",
+                    downloads = "3.1M",
+                    likes = "21.5k",
+                    popularity = "95%"
+                ),
+                ContainerSystemEntity(
+                    id = "kali-rolling",
+                    name = "Kali Linux",
+                    version = "2024.2 (Rolling)",
+                    flavor = "Kali",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = false,
+                    desktopEnv = "Xfce / Security Tools",
+                    diskUsageMb = 0,
+                    portMappings = "4444:4444",
+                    neonSimdEnabled = true,
+                    statusBadge = "Security Suite",
+                    author = "OffSec",
+                    downloads = "5.8M",
+                    likes = "46.0k",
+                    popularity = "98%"
+                ),
+                ContainerSystemEntity(
+                    id = "opensuse-tumbleweed",
+                    name = "openSUSE Tumbleweed",
+                    version = "Rolling (Zypper)",
+                    flavor = "openSUSE",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = false,
                     desktopEnv = "Terminal-first",
-                    neonSimdEnabled = true
-                ),
-                ContainerSystemEntity(
-                    id = "ubuntu-2004-xfce",
-                    name = "Ubuntu 20.04 LTS",
-                    version = "20.04.6 LTS (Focal)",
-                    flavor = "Ubuntu",
-                    architecture = "aarch64",
-                    engineType = "PRoot-Distro",
-                    isInstalled = false,
-                    isRunning = false,
-                    desktopEnv = "Xfce desktop",
-                    neonSimdEnabled = true
-                ),
-                ContainerSystemEntity(
-                    id = "ubuntu-2204-gnome",
-                    name = "Ubuntu 22.04 LTS",
-                    version = "22.04.4 LTS",
-                    flavor = "Ubuntu",
-                    architecture = "aarch64",
-                    engineType = "Podman Rootless",
-                    isInstalled = false,
-                    isRunning = false,
-                    desktopEnv = "GNOME desktop",
-                    neonSimdEnabled = true
-                ),
-                ContainerSystemEntity(
-                    id = "ubuntu-2204-kde",
-                    name = "Ubuntu 22.04 LTS",
-                    version = "22.04.4 LTS",
-                    flavor = "Ubuntu",
-                    architecture = "aarch64",
-                    engineType = "Podman Rootless",
-                    isInstalled = false,
-                    isRunning = false,
-                    desktopEnv = "KDE desktop",
-                    neonSimdEnabled = true
-                ),
-                ContainerSystemEntity(
-                    id = "ubuntu-2404-lts",
-                    name = "Ubuntu 24.04 LTS",
-                    version = "24.04 LTS (Noble)",
-                    flavor = "Ubuntu",
-                    architecture = "aarch64",
-                    engineType = "Podman Rootless",
-                    isInstalled = false,
-                    isRunning = false,
-                    desktopEnv = "Terminal-first",
-                    neonSimdEnabled = true
-                ),
-                ContainerSystemEntity(
-                    id = "ubuntu-2604-lts",
-                    name = "Ubuntu 26.04 LTS",
-                    version = "26.04 LTS (Plasma Preview)",
-                    flavor = "Ubuntu",
-                    architecture = "aarch64",
-                    engineType = "Podman Rootless",
-                    isInstalled = false,
-                    isRunning = false,
-                    desktopEnv = "plasma",
-                    neonSimdEnabled = true
+                    diskUsageMb = 0,
+                    portMappings = "8080:80",
+                    neonSimdEnabled = true,
+                    statusBadge = "Zypper Package",
+                    author = "openSUSE Project",
+                    downloads = "1.9M",
+                    likes = "15.3k",
+                    popularity = "94%"
                 ),
                 ContainerSystemEntity(
                     id = "void-linux",
                     name = "Void Linux",
-                    version = "Musl minimal",
+                    version = "Musl minimal (XBPS)",
                     flavor = "Void",
                     architecture = "aarch64",
                     engineType = "PRoot-Distro",
                     isInstalled = false,
                     isRunning = false,
                     desktopEnv = "Terminal-first",
-                    neonSimdEnabled = true
+                    diskUsageMb = 0,
+                    neonSimdEnabled = true,
+                    statusBadge = "Runit / Musl",
+                    author = "Void Linux Team",
+                    downloads = "940k",
+                    likes = "9.8k",
+                    popularity = "93%"
+                ),
+                ContainerSystemEntity(
+                    id = "docker-python-slim",
+                    name = "Python 3.12 AI & Jupyter",
+                    version = "3.12-slim (Torch Ready)",
+                    flavor = "Python",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = true,
+                    desktopEnv = "JupyterLab Web",
+                    diskUsageMb = 0,
+                    portMappings = "8888:8888",
+                    neonSimdEnabled = true,
+                    statusBadge = "AI & Data",
+                    author = "Docker Official",
+                    downloads = "11.2M",
+                    likes = "59.3k",
+                    popularity = "99%"
                 ),
                 ContainerSystemEntity(
                     id = "docker-nginx-alpine",
@@ -188,22 +238,34 @@ class ContainerRepository(private val dao: ContainerDao) {
                     engineType = "Podman Rootless",
                     isInstalled = false,
                     isRunning = false,
-                    desktopEnv = "Web Service",
-                    portMappings = "80:80",
-                    neonSimdEnabled = true
+                    desktopEnv = "HTTP Service",
+                    diskUsageMb = 0,
+                    portMappings = "8080:80",
+                    neonSimdEnabled = true,
+                    statusBadge = "Web Server",
+                    author = "Nginx Official",
+                    downloads = "18.5M",
+                    likes = "74.2k",
+                    popularity = "99%"
                 ),
                 ContainerSystemEntity(
-                    id = "docker-python-slim",
-                    name = "Python AI & Jupyter Lab",
-                    version = "3.12-slim",
+                    id = "docker-nodejs-dev",
+                    name = "Node.js 22 LTS Developer",
+                    version = "22.3-alpine",
                     flavor = "Docker",
                     architecture = "aarch64",
                     engineType = "Podman Rootless",
                     isInstalled = false,
                     isRunning = false,
-                    desktopEnv = "Web Service",
-                    portMappings = "8888:8888",
-                    neonSimdEnabled = true
+                    desktopEnv = "Node & NPM",
+                    diskUsageMb = 0,
+                    portMappings = "3000:3000, 5173:5173",
+                    neonSimdEnabled = true,
+                    statusBadge = "Fullstack JS",
+                    author = "Node.js Org",
+                    downloads = "8.9M",
+                    likes = "43.7k",
+                    popularity = "98%"
                 )
             )
             dao.insertSystems(defaultSystems)
@@ -388,7 +450,43 @@ class ContainerRepository(private val dao: ContainerDao) {
         }
 
         dao.setSystemInstalled(systemId, true, 680)
+        dao.setSystemRunning(systemId, true)
         logEvent("system_installed", "Successfully provisioned container image $systemId", "SUCCESS")
+
+        val existingApps = dao.getAppsForContainer(systemId).firstOrNull()
+        if (existingApps.isNullOrEmpty()) {
+            val apps = listOf(
+                ContainerAppEntity(
+                    id = "app-$systemId-bash",
+                    containerId = systemId,
+                    name = "Bash Shell (Terminal)",
+                    category = "Development",
+                    command = "/bin/bash",
+                    displayType = "CLI Terminal",
+                    iconName = "terminal",
+                    isRunning = true
+                ),
+                ContainerAppEntity(
+                    id = "app-$systemId-htop",
+                    containerId = systemId,
+                    name = "HTOP System Monitor",
+                    category = "Utility",
+                    command = "htop",
+                    displayType = "CLI Terminal",
+                    iconName = "monitor"
+                ),
+                ContainerAppEntity(
+                    id = "app-$systemId-net",
+                    containerId = systemId,
+                    name = "Network Diagnostics",
+                    category = "System",
+                    command = "ip addr show",
+                    displayType = "CLI Terminal",
+                    iconName = "settings"
+                )
+            )
+            dao.insertApps(apps)
+        }
     }
 
     suspend fun deleteSystem(systemId: String) {

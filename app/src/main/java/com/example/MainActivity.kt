@@ -84,18 +84,18 @@ class MainActivity : ComponentActivity() {
                             )
 
                             NavigationBarItem(
-                                selected = selectedTab == MainTab.LINUX,
-                                onClick = { viewModel.selectTab(MainTab.LINUX) },
+                                selected = selectedTab == MainTab.OS,
+                                onClick = { viewModel.selectTab(MainTab.OS) },
                                 icon = {
                                     Icon(
-                                        imageVector = if (selectedTab == MainTab.LINUX) Icons.Filled.FormatListBulleted else Icons.Outlined.FormatListBulleted,
-                                        contentDescription = "Linux"
+                                        imageVector = if (selectedTab == MainTab.OS) Icons.Filled.Dns else Icons.Outlined.Dns,
+                                        contentDescription = "OS"
                                     )
                                 },
                                 label = {
                                     Text(
-                                        text = "Linux",
-                                        fontWeight = if (selectedTab == MainTab.LINUX) FontWeight.Bold else FontWeight.Normal,
+                                        text = "OS",
+                                        fontWeight = if (selectedTab == MainTab.OS) FontWeight.Bold else FontWeight.Normal,
                                         fontSize = 12.sp
                                     )
                                 },
@@ -159,18 +159,18 @@ class MainActivity : ComponentActivity() {
                             )
 
                             NavigationBarItem(
-                                selected = selectedTab == MainTab.CONVERT,
-                                onClick = { viewModel.selectTab(MainTab.CONVERT) },
+                                selected = selectedTab == MainTab.TOOLS,
+                                onClick = { viewModel.selectTab(MainTab.TOOLS) },
                                 icon = {
                                     Icon(
-                                        imageVector = if (selectedTab == MainTab.CONVERT) Icons.Filled.Transform else Icons.Outlined.Transform,
-                                        contentDescription = "Convert"
+                                        imageVector = if (selectedTab == MainTab.TOOLS) Icons.Filled.Build else Icons.Outlined.Build,
+                                        contentDescription = "Tools"
                                     )
                                 },
                                 label = {
                                     Text(
-                                        text = "Convert",
-                                        fontWeight = if (selectedTab == MainTab.CONVERT) FontWeight.Bold else FontWeight.Normal,
+                                        text = "Tools",
+                                        fontWeight = if (selectedTab == MainTab.TOOLS) FontWeight.Bold else FontWeight.Normal,
                                         fontSize = 12.sp
                                     )
                                 },
@@ -218,10 +218,10 @@ class MainActivity : ComponentActivity() {
                         Crossfade(targetState = selectedTab, label = "TabCrossfade") { tab ->
                             when (tab) {
                                 MainTab.HOME -> HomeScreen(viewModel = viewModel)
-                                MainTab.LINUX -> ContainersScreen(viewModel = viewModel)
+                                MainTab.OS -> ContainersScreen(viewModel = viewModel)
                                 MainTab.TERMINAL -> TerminalScreen(viewModel = viewModel)
                                 MainTab.APPS -> AppsScreen(viewModel = viewModel)
-                                MainTab.CONVERT -> ConverterScreen(viewModel = viewModel)
+                                MainTab.TOOLS -> ToolsScreen(viewModel = viewModel)
                                 MainTab.ABOUT -> AboutJournalScreen(viewModel = viewModel)
                             }
                         }

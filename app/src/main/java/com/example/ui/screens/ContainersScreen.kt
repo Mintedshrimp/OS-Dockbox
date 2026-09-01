@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,17 +70,7 @@ fun ContainersScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = UDroidBg,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { viewModel.setShowNewContainerDialog(true) },
-                containerColor = UDroidGreen,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                icon = { Icon(Icons.Default.Add, contentDescription = "Add image") },
-                text = { Text("Pull / Add Image", fontWeight = FontWeight.Bold) }
-            )
-        }
+        containerColor = UDroidBg
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -99,14 +90,14 @@ fun ContainersScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
                     Text(
-                        text = "Linux systems",
+                        text = "OS",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Black,
                         color = UDroidTextPrimary,
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "$installedCount installed • $totalCount compatible",
+                        text = "$installedCount installed • $totalCount available in catalog",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = UDroidTextSecondary
@@ -121,7 +112,7 @@ fun ContainersScreen(
                     onValueChange = { viewModel.setSearchQuerySystems(it) },
                     placeholder = {
                         Text(
-                            text = "Search Ubuntu, Debian, Fedora...",
+                            text = "Search containers (Ubuntu, Debian, Fedora, Arch...)",
                             color = UDroidTextMuted,
                             fontSize = 14.sp
                         )
@@ -164,7 +155,7 @@ fun ContainersScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val filters = listOf(
-                        "ALL" to "All Systems",
+                        "ALL" to "All ($totalCount)",
                         "INSTALLED" to "Installed ($installedCount)",
                         "PODMAN" to "Podman Rootless",
                         "PROOT" to "PRoot Distros",
@@ -197,14 +188,14 @@ fun ContainersScreen(
             item {
                 Column(modifier = Modifier.padding(start = 24.dp, top = 12.dp, bottom = 8.dp)) {
                     Text(
-                        text = "ALL SYSTEMS",
+                        text = if (searchQuery.isNotBlank()) "SEARCH RESULTS" else "CONTAINER CATALOG",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = UDroidTextMuted,
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "UDROID AND PROOT-DISTRO",
+                        text = if (searchQuery.isNotBlank()) "FOUND ${filteredList.size} MATCHING PACKAGES" else "TAP INSTALL TO DOWNLOAD & PROVISION",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = UDroidTextSecondary,
@@ -213,60 +204,61 @@ fun ContainersScreen(
                 }
             }
 
+            if (filteredList.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 24.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, UDroidCardBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SearchOff,
+                                contentDescription = null,
+                                tint = UDroidTextMuted,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "No containers found",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = UDroidTextPrimary
+                            )
+                            Text(
+                                text = "Try searching for 'Ubuntu', 'Debian', 'Alpine', 'Fedora', or 'Python'",
+                                fontSize = 13.sp,
+                                color = UDroidTextSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
             // List of systems
             items(filteredList, key = { it.id }) { system ->
                 ContainerSystemCard(
                     system = system,
+                    isInstalling = installingId == system.id,
                     onOpenTerminal = {
                         viewModel.setActiveContainer(system.id)
+                        if (!system.isRunning) {
+                            viewModel.toggleSystem(system)
+                        }
                         viewModel.selectTab(MainTab.TERMINAL)
                     },
                     onOpenConfig = { viewModel.openEditSystem(system) },
                     onInstall = { viewModel.installSystem(system.id) },
                     onToggleRunning = { viewModel.toggleSystem(system) }
                 )
-            }
-
-            // Official Images section info banner
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, UDroidCardBorder)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Docker Hub & Podman Registries",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = UDroidTextPrimary
-                            )
-                            Text(
-                                text = "Can install any container directly via OCI rootless pull",
-                                fontSize = 12.sp,
-                                color = UDroidTextSecondary
-                            )
-                        }
-                        Button(
-                            onClick = { viewModel.setShowNewContainerDialog(true) },
-                            colors = ButtonDefaults.buttonColors(containerColor = UDroidGreen),
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                        ) {
-                            Text("Pull Image", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
             }
         }
     }
@@ -346,6 +338,7 @@ fun ContainersScreen(
 @Composable
 fun ContainerSystemCard(
     system: ContainerSystemEntity,
+    isInstalling: Boolean = false,
     onOpenTerminal: () -> Unit,
     onOpenConfig: () -> Unit,
     onInstall: () -> Unit,
@@ -354,85 +347,240 @@ fun ContainerSystemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 5.dp)
+            .height(118.dp)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
             .clickable { onOpenConfig() },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = UDroidCardSurface),
         border = BorderStroke(1.dp, UDroidCardBorder)
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            // TOP SECTION: Name, Badges, Distro Icon & Action Button
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.weight(1f)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                DistroIcon(flavor = system.flavor)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    DistroIcon(flavor = system.flavor)
 
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = system.name,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = UDroidTextPrimary
-                        )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = system.name,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = UDroidTextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
 
-                        if (system.isRunning) {
-                            StatusBadge(text = "Active", type = BadgeType.ACTIVE)
-                        } else if (system.isRecommended) {
-                            StatusBadge(text = "Recommended", type = BadgeType.RECOMMENDED)
+                            if (system.isRunning) {
+                                StatusBadge(text = "Running", type = BadgeType.ACTIVE)
+                            } else if (system.isRecommended) {
+                                StatusBadge(text = "Recommended", type = BadgeType.RECOMMENDED)
+                            }
                         }
-                    }
 
-                    Text(
-                        text = "${system.desktopEnv} • ${system.architecture} • ${if (system.engineType.contains("Podman")) "OS Dockbox" else "proot-distro"}",
-                        fontSize = 12.sp,
-                        color = UDroidTextSecondary
-                    )
+                        Text(
+                            text = "${system.version} • ${system.architecture} • ${if (system.engineType.contains("Podman")) "Podman" else "PRoot"}",
+                            fontSize = 11.sp,
+                            color = UDroidTextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Action button next to each card
+                if (isInstalling) {
+                    Button(
+                        onClick = { /* In progress */ },
+                        enabled = false,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            disabledContainerColor = Color(0xFFE2EFE7),
+                            disabledContentColor = UDroidGreen
+                        ),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(12.dp),
+                            strokeWidth = 2.dp,
+                            color = UDroidGreen
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "...",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else if (!system.isInstalled) {
+                    Button(
+                        onClick = onInstall,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = UDroidGreen,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Install",
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Install",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = onOpenTerminal,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = if (system.isRunning) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFDCFCE7),
+                                contentColor = UDroidGreenDark
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors(
+                                containerColor = UDroidGreen,
+                                contentColor = Color.White
+                            )
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (system.isRunning) Icons.Default.Terminal else Icons.Default.PlayArrow,
+                            contentDescription = if (system.isRunning) "Open shell" else "Run container",
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (system.isRunning) "Open" else "Run",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            // Trailing action or chevron
-            if (system.isInstalled) {
+            HorizontalDivider(
+                color = Color(0xFFF1F5F9),
+                thickness = 1.dp
+            )
+
+            // BOTTOM SECTION: Likes, Popularity, Downloads on Left, Author on Bottom-Right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left: Likes, Popularity, Downloads
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Likes
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "Likes",
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            text = system.likes,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = UDroidTextSecondary
+                        )
+                    }
+
+                    // Popularity
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Popularity",
+                            tint = Color(0xFFF59E0B),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            text = system.popularity,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = UDroidTextSecondary
+                        )
+                    }
+
+                    // Downloads
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = "Downloads",
+                            tint = Color(0xFF0284C7),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            text = system.downloads,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = UDroidTextSecondary
+                        )
+                    }
+                }
+
+                // Bottom Right: Author
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    TextButton(
-                        onClick = onOpenTerminal,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = if (system.isRunning) "Open" else "Start",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (system.isRunning) UDroidGreen else UDroidTextPrimary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                            contentDescription = null,
-                            tint = if (system.isRunning) UDroidGreen else UDroidTextMuted,
-                            modifier = Modifier.size(12.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Author",
+                        tint = Color(0xFF94A3B8),
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Text(
+                        text = "by ${system.author}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = UDroidTextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-            } else {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                    contentDescription = "Details",
-                    tint = UDroidTextMuted,
-                    modifier = Modifier.size(14.dp)
-                )
             }
         }
     }

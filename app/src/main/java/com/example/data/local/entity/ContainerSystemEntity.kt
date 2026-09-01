@@ -25,5 +25,9 @@ data class ContainerSystemEntity(
     val imageTag: String = "latest",
     val registrySource: String = "Docker Hub",
     val statusBadge: String = "Ready",
+    val author: String = "Official",
+    val downloads: String = "1.2M",
+    val likes: String = "12.4k",
+    val popularity: String = "98%",
     val installedTimestamp: Long = System.currentTimeMillis()
 )
