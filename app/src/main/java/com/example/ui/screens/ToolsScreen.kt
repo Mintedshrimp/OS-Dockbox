@@ -28,6 +28,7 @@ import com.example.domain.model.DockerPushItem
 import com.example.ui.components.HeaderBar
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.ContainerViewModel
+import com.example.ui.viewmodel.MainTab
 import com.example.ui.viewmodel.PortBridgeRule
 import com.example.ui.viewmodel.ToolInfoData
 
@@ -258,6 +259,41 @@ fun ToolsScreen(
                     } else {
                         viewModel.setShowConvertDialog(true)
                     }
+                }
+            )
+        }
+
+        // Tool 6: PRoot-Distro Engine & Podman Fallback
+        item {
+            ToolCardItem(
+                icon = Icons.Default.Shield,
+                iconBg = Color(0xFFFEF3C7),
+                iconTint = Color(0xFFD97706),
+                title = "PRoot-Distro Fallback Engine",
+                subtitle = "Userland ptrace syscall interception engine that guarantees 100% compatibility when Podman encounters kernel restrictions",
+                badge = "Kernel Resilience Guard",
+                badgeColor = Color(0xFFD97706),
+                onInfoClick = {
+                    viewModel.showToolInfo(
+                        ToolInfoData(
+                            title = "PRoot-Distro Container Fallback",
+                            subtitle = "Dual-engine unprivileged execution with automatic ptrace failover",
+                            description = "While Podman leverages native Linux user namespaces (crun) for bare-metal performance, some Android vendor kernels disable CONFIG_USER_NS or enforce strict seccomp clone3 policies. Dockbox automatically detects these restrictions and transparently switches the container into PRoot-Distro ptrace syscall interception mode so your Linux environment always runs reliably.",
+                            cliCommand = "proot-distro login --bind /sdcard:/sdcard ubuntu --isolated",
+                            keyFeatures = listOf(
+                                "Zero root permissions required on any Android 8.0+ device",
+                                "Bypasses missing CONFIG_USER_NS and restricted clone3 syscalls",
+                                "Emulates chroot, fake root UID 0, and /proc /sys filesystem mounts",
+                                "Preserves container rootfs state and package configurations across engine switches"
+                            ),
+                            bestPractice = "Leave 'Auto PRoot Fallback Guard' enabled in container settings for automatic failover, or switch engines manually in the terminal with 'switch-engine'."
+                        )
+                    )
+                },
+                actionLabel = "Inspect",
+                onActionClick = {
+                    viewModel.selectTab(MainTab.TERMINAL)
+                    viewModel.executeTerminalCommand("proot-info")
                 }
             )
         }

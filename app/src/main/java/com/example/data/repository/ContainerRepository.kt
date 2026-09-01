@@ -499,6 +499,39 @@ class ContainerRepository(private val dao: ContainerDao) {
         dao.updateSystem(system)
     }
 
+    suspend fun triggerProotFallback(system: ContainerSystemEntity, reason: String) {
+        val updated = system.copy(
+            isFallbackEngaged = true,
+            engineType = "PRoot-Distro",
+            fallbackReason = reason
+        )
+        dao.updateSystem(updated)
+        logEvent(
+            tag = "podman_failover_proot",
+            message = "[FAILOVER] Podman issue encountered for ${system.name} ($reason) -> Switched to PRoot-Distro (ptrace syscall emulation)",
+            level = "WARN"
+        )
+        logEvent(
+            tag = "proot_ptrace_attached",
+            message = "PRoot ptrace emulation engine engaged with fake rootfs binding for ${system.id}",
+            level = "SUCCESS"
+        )
+    }
+
+    suspend fun resetPodmanEngine(system: ContainerSystemEntity) {
+        val updated = system.copy(
+            isFallbackEngaged = false,
+            engineType = "Podman Rootless",
+            fallbackReason = ""
+        )
+        dao.updateSystem(updated)
+        logEvent(
+            tag = "podman_restored",
+            message = "Restored Podman Rootless crun engine for ${system.name}",
+            level = "INFO"
+        )
+    }
+
     suspend fun addCustomContainer(
         name: String,
         imageRef: String,

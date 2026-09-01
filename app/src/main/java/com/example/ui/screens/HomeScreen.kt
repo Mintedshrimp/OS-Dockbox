@@ -185,7 +185,7 @@ fun HomeScreen(
                     ) {
                         SpecStatItem(label = "Instruction Set", value = "ARMv8.2-A Kryo")
                         SpecStatItem(label = "ABI", value = "arm64-v8a (64-bit)")
-                        SpecStatItem(label = "Isolation", value = "User-NS (crun)")
+                        SpecStatItem(label = "Isolation", value = "Podman / PRoot Guard")
                     }
                 }
             }

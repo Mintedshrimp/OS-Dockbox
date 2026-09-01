@@ -295,47 +295,63 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
         val flavor = system.flavor.lowercase()
         val prompt = getPromptForSystem(system)
 
-        val banner = when (flavor) {
-            "ubuntu" -> listOf(
-                TerminalLine("Welcome to Ubuntu 24.04 LTS (GNU/Linux 6.6.21-android aarch64)", TerminalLineType.HEADER),
-                TerminalLine(" * Documentation:  https://help.ubuntu.com", TerminalLineType.OUTPUT),
-                TerminalLine(" * Management:     Podman Rootless crun (User Namespaces)", TerminalLineType.OUTPUT),
-                TerminalLine(" * Hardware Accel: ARM NEON 128-bit SIMD [ACTIVE]", TerminalLineType.SUCCESS),
-                TerminalLine(" * System State:   Container ID ${system.id.take(10)} [RUNNING]", TerminalLineType.OUTPUT),
-                TerminalLine("Type 'help', 'apt update', or 'neofetch' to begin.", TerminalLineType.WARNING),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
-            "alpine" -> listOf(
-                TerminalLine("Welcome to Alpine Linux 3.22 (musl libc 1.2.5, aarch64)", TerminalLineType.HEADER),
-                TerminalLine("Kernel 6.6.21-android-rootless / Minimal Rootfs (7MB)", TerminalLineType.OUTPUT),
-                TerminalLine("Package manager: apk add <package>", TerminalLineType.SUCCESS),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
-            "arch" -> listOf(
-                TerminalLine("Arch Linux (ARMv8.2-A aarch64) - Rolling Release", TerminalLineType.HEADER),
-                TerminalLine("Pacman v6.1.0 unprivileged environment ready.", TerminalLineType.SUCCESS),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
-            "fedora" -> listOf(
-                TerminalLine("Fedora 40 Cloud (Container Base / DNF5)", TerminalLineType.HEADER),
-                TerminalLine("SELinux unconfined container namespace active.", TerminalLineType.OUTPUT),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
-            "kali" -> listOf(
-                TerminalLine("Kali Linux 2024.2 Rolling (Security Suite)", TerminalLineType.HEADER),
-                TerminalLine("Unprivileged penetration testing environment loaded.", TerminalLineType.WARNING),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
-            "python" -> listOf(
-                TerminalLine("Python 3.12.3 Container Environment (JupyterLab Ready)", TerminalLineType.HEADER),
-                TerminalLine("PyTorch + NumPy + NEON Vector Acceleration ready.", TerminalLineType.SUCCESS),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
-            else -> listOf(
-                TerminalLine("=== ${system.name} (${system.engineType}) ===", TerminalLineType.HEADER),
-                TerminalLine("Rootless session attached. Architecture: aarch64", TerminalLineType.OUTPUT),
-                TerminalLine(prompt, TerminalLineType.OUTPUT)
-            )
+        val banner = mutableListOf<TerminalLine>()
+
+        if (system.isFallbackEngaged) {
+            banner.add(TerminalLine("⚠️ [ENGINE FALLBACK ACTIVE] Podman User-NS restricted", TerminalLineType.WARNING))
+            banner.add(TerminalLine(" * Failover Engine:   PRoot-Distro (ptrace syscall emulation)", TerminalLineType.SUCCESS))
+            banner.add(TerminalLine(" * Failover Reason:   ${if (system.fallbackReason.isNotBlank()) system.fallbackReason else "CONFIG_USER_NS unshare restriction / seccomp clone3"}", TerminalLineType.OUTPUT))
+            banner.add(TerminalLine(" * Fake Rootfs Root:  /data/data/com.example/files/rootfs/${system.id}", TerminalLineType.OUTPUT))
+            banner.add(TerminalLine(" * Isolation Mode:    Rootless PTrace Hook (100% kernel compatible)", TerminalLineType.OUTPUT))
+            banner.add(TerminalLine("Type 'proot-info', 'switch-engine', or 'help' for diagnostics.", TerminalLineType.HEADER))
+            banner.add(TerminalLine(prompt, TerminalLineType.OUTPUT))
+        } else {
+            val defaultBanner = when (flavor) {
+                "ubuntu" -> listOf(
+                    TerminalLine("Welcome to Ubuntu 24.04 LTS (GNU/Linux 6.6.21-android aarch64)", TerminalLineType.HEADER),
+                    TerminalLine(" * Documentation:  https://help.ubuntu.com", TerminalLineType.OUTPUT),
+                    TerminalLine(" * Management:     Podman Rootless crun (User Namespaces)", TerminalLineType.OUTPUT),
+                    TerminalLine(" * Fallback Mode:  PRoot-Distro Ready [AUTO-FAILOVER ON]", TerminalLineType.SUCCESS),
+                    TerminalLine(" * Hardware Accel: ARM NEON 128-bit SIMD [ACTIVE]", TerminalLineType.SUCCESS),
+                    TerminalLine(" * System State:   Container ID ${system.id.take(10)} [RUNNING]", TerminalLineType.OUTPUT),
+                    TerminalLine("Type 'help', 'apt update', 'proot-info', or 'neofetch' to begin.", TerminalLineType.WARNING),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+                "alpine" -> listOf(
+                    TerminalLine("Welcome to Alpine Linux 3.22 (musl libc 1.2.5, aarch64)", TerminalLineType.HEADER),
+                    TerminalLine("Kernel 6.6.21-android-rootless / Minimal Rootfs (7MB)", TerminalLineType.OUTPUT),
+                    TerminalLine("Engine: Podman Rootless (PRoot-Distro Fallback Guard Active)", TerminalLineType.SUCCESS),
+                    TerminalLine("Package manager: apk add <package>", TerminalLineType.OUTPUT),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+                "arch" -> listOf(
+                    TerminalLine("Arch Linux (ARMv8.2-A aarch64) - Rolling Release", TerminalLineType.HEADER),
+                    TerminalLine("Pacman v6.1.0 unprivileged environment ready.", TerminalLineType.SUCCESS),
+                    TerminalLine("Dual-Engine: Podman OCI + PRoot Fallback", TerminalLineType.OUTPUT),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+                "fedora" -> listOf(
+                    TerminalLine("Fedora 40 Cloud (Container Base / DNF5)", TerminalLineType.HEADER),
+                    TerminalLine("SELinux unconfined container namespace active.", TerminalLineType.OUTPUT),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+                "kali" -> listOf(
+                    TerminalLine("Kali Linux 2024.2 Rolling (Security Suite)", TerminalLineType.HEADER),
+                    TerminalLine("Unprivileged penetration testing environment loaded.", TerminalLineType.WARNING),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+                "python" -> listOf(
+                    TerminalLine("Python 3.12.3 Container Environment (JupyterLab Ready)", TerminalLineType.HEADER),
+                    TerminalLine("PyTorch + NumPy + NEON Vector Acceleration ready.", TerminalLineType.SUCCESS),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+                else -> listOf(
+                    TerminalLine("=== ${system.name} (${system.engineType}) ===", TerminalLineType.HEADER),
+                    TerminalLine("Rootless session attached. PRoot Fallback Guard: Active", TerminalLineType.OUTPUT),
+                    TerminalLine(prompt, TerminalLineType.OUTPUT)
+                )
+            }
+            banner.addAll(defaultBanner)
         }
 
         _terminalLines.value = banner
@@ -391,6 +407,9 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
                 TerminalLine("  whoami / pwd / ls  - Inspect current user and file structure", TerminalLineType.OUTPUT),
                 TerminalLine("  podman ps          - List running container processes", TerminalLineType.OUTPUT),
                 TerminalLine("  podman stats       - View live memory, CPU & I/O usage", TerminalLineType.OUTPUT),
+                TerminalLine("  proot-info         - Inspect PRoot-Distro ptrace engine fallback diagnostics", TerminalLineType.OUTPUT),
+                TerminalLine("  switch-engine      - Switch container engine between Podman and PRoot-Distro", TerminalLineType.OUTPUT),
+                TerminalLine("  podman-fallback    - Simulate kernel namespace restriction failover to PRoot", TerminalLineType.OUTPUT),
                 TerminalLine("  simd-bench         - Run ARM NEON 128-bit vectorization benchmark", TerminalLineType.OUTPUT),
                 TerminalLine("  neofetch           - Display distribution info and logo", TerminalLineType.OUTPUT),
                 TerminalLine("  top / htop         - Live process status", TerminalLineType.OUTPUT),
@@ -400,6 +419,56 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
             "clear" -> {
                 _terminalLines.value = emptyList()
                 emptyList()
+            }
+
+            "proot", "proot-info", "proot-distro" -> {
+                val isFallback = activeSystem?.isFallbackEngaged == true
+                listOf(
+                    TerminalLine("=== PRoot-Distro Fallback Architecture Diagnostics ===", TerminalLineType.HEADER),
+                    TerminalLine("Engine Status:      ${if (isFallback) "ACTIVE (Failover in effect)" else "STANDBY (Automatic Failover Ready)"}", if (isFallback) TerminalLineType.WARNING else TerminalLineType.SUCCESS),
+                    TerminalLine("Syscall Hook:       ptrace(PTRACE_SYSCALL) register rewrite", TerminalLineType.OUTPUT),
+                    TerminalLine("Rootfs Sandbox:     /data/data/com.example/files/rootfs/${activeSystem?.id ?: "current"}", TerminalLineType.OUTPUT),
+                    TerminalLine("User Namespace:     Simulated UID 0 / GID 0 (Unprivileged safe)", TerminalLineType.OUTPUT),
+                    TerminalLine("Kernel Req:         Works on ANY Android Linux kernel (No CONFIG_USER_NS needed)", TerminalLineType.SUCCESS),
+                    TerminalLine("Failover Triggers:  CONFIG_USER_NS=n, crun seccomp clone3, unshare(CLONE_NEWUSER)", TerminalLineType.OUTPUT),
+                    TerminalLine("Action:             Type 'switch-engine' to toggle runtime engine anytime.", TerminalLineType.HEADER)
+                )
+            }
+
+            "switch-engine" -> {
+                if (activeSystem != null) {
+                    if (activeSystem.isFallbackEngaged) {
+                        restorePodmanEngine(activeSystem.id)
+                        listOf(
+                            TerminalLine("Switching engine back to Podman Rootless crun...", TerminalLineType.HEADER),
+                            TerminalLine("Re-initializing unshared user namespaces (UID map 100000:65536)...", TerminalLineType.OUTPUT),
+                            TerminalLine("Engine restored: Podman Rootless (crun)", TerminalLineType.SUCCESS)
+                        )
+                    } else {
+                        triggerProotFallback(activeSystem.id, "Manual engine switch to PRoot-Distro ptrace emulation")
+                        listOf(
+                            TerminalLine("Engaging PRoot-Distro Fallback Engine...", TerminalLineType.WARNING),
+                            TerminalLine("Syscall translation attached via ptrace...", TerminalLineType.OUTPUT),
+                            TerminalLine("Engine switched: PRoot-Distro (Rootless Syscall Interception)", TerminalLineType.SUCCESS)
+                        )
+                    }
+                } else {
+                    listOf(TerminalLine("Error: No container active to switch.", TerminalLineType.ERROR))
+                }
+            }
+
+            "podman-fallback" -> {
+                if (activeSystem != null) {
+                    triggerProotFallback(activeSystem.id, "Kernel unshare(CLONE_NEWUSER) EPERM (CONFIG_USER_NS disabled)")
+                    listOf(
+                        TerminalLine("[PODMAN ERROR] crun: unshare(CLONE_NEWUSER): Operation not permitted", TerminalLineType.ERROR),
+                        TerminalLine("[GUARD TRIGGERED] Automatic PRoot-Distro fallback engaged seamlessly!", TerminalLineType.WARNING),
+                        TerminalLine("[PROOT-DISTRO] PTrace syscall emulator loaded fake rootfs.", TerminalLineType.SUCCESS),
+                        TerminalLine("Container '${activeSystem.name}' is running stably in userland fallback.", TerminalLineType.OUTPUT)
+                    )
+                } else {
+                    listOf(TerminalLine("Error: No active container selected.", TerminalLineType.ERROR))
+                }
             }
 
             "whoami" -> listOf(
@@ -587,6 +656,39 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
             repository.updateSystem(system)
             _selectedSystemForEdit.value = null
             _userMessage.value = "Updated container configuration for ${system.name}"
+        }
+    }
+
+    fun triggerProotFallback(systemId: String, reason: String = "Podman unshare / user-namespace restricted on Android kernel") {
+        val system = allSystems.value.find { it.id == systemId } ?: return
+        viewModelScope.launch {
+            repository.triggerProotFallback(system, reason)
+            val updated = allSystems.value.find { it.id == systemId }
+            if (updated != null && _activeContainerId.value == systemId) {
+                attachContainerTerminal(updated)
+            }
+            _userMessage.value = "⚠️ Podman failover: ${system.name} now running via PRoot-Distro (ptrace)"
+        }
+    }
+
+    fun restorePodmanEngine(systemId: String) {
+        val system = allSystems.value.find { it.id == systemId } ?: return
+        viewModelScope.launch {
+            repository.resetPodmanEngine(system)
+            val updated = allSystems.value.find { it.id == systemId }
+            if (updated != null && _activeContainerId.value == systemId) {
+                attachContainerTerminal(updated)
+            }
+            _userMessage.value = "Restored Podman Rootless crun engine for ${system.name}"
+        }
+    }
+
+    fun toggleAutoFallback(systemId: String, enabled: Boolean) {
+        val system = allSystems.value.find { it.id == systemId } ?: return
+        viewModelScope.launch {
+            val updated = system.copy(autoFallbackToProot = enabled)
+            repository.updateSystem(updated)
+            _userMessage.value = if (enabled) "Auto PRoot fallback enabled for ${system.name}" else "Auto PRoot fallback disabled"
         }
     }
 

@@ -17,7 +17,7 @@ import com.example.data.local.entity.SupervisorLogEntity
         ConversionJobEntity::class,
         SupervisorLogEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

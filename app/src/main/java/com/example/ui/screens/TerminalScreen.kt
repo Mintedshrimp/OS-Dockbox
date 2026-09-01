@@ -148,27 +148,56 @@ fun TerminalScreen(
                 }
             }
 
-            // Quick Stats Tag (NEON Active)
+            // Quick Stats Tag (NEON / Fallback Active)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFE0F2FE))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Bolt,
-                    contentDescription = null,
-                    tint = Color(0xFF0284C7),
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = if (activeSystem?.isRunning == true) "TTY ATTACHED" else "STANDBY",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0369A1)
-                )
+                if (activeSystem?.isFallbackEngaged == true) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFFEF3C7))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = Color(0xFFD97706),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "PROOT FALLBACK",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFB45309)
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFE0F2FE))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Bolt,
+                        contentDescription = null,
+                        tint = Color(0xFF0284C7),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = if (activeSystem?.isRunning == true) "TTY ATTACHED" else "STANDBY",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0369A1)
+                    )
+                }
             }
         }
 
@@ -180,18 +209,27 @@ fun TerminalScreen(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            val quickCmds = listOf("podman ps", "podman stats", "simd-bench", "neofetch", "apt update", "apk add", "clear")
+            val quickCmds = listOf(
+                "podman ps",
+                "proot-info",
+                "switch-engine",
+                "podman stats",
+                "simd-bench",
+                "neofetch",
+                "apt update",
+                "clear"
+            )
             items(quickCmds) { cmd ->
                 SuggestionChip(
                     onClick = { viewModel.executeTerminalCommand(cmd) },
                     label = { Text(cmd, fontSize = 11.sp, fontFamily = FontFamily.Monospace) },
                     colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = Color.White,
-                        labelColor = UDroidTextPrimary
+                        containerColor = if (cmd == "proot-info" || cmd == "switch-engine") Color(0xFFF0FDF4) else Color.White,
+                        labelColor = if (cmd == "proot-info" || cmd == "switch-engine") UDroidGreenDark else UDroidTextPrimary
                     ),
                     border = SuggestionChipDefaults.suggestionChipBorder(
                         enabled = true,
-                        borderColor = UDroidCardBorder
+                        borderColor = if (cmd == "proot-info" || cmd == "switch-engine") Color(0xFFBBF7D0) else UDroidCardBorder
                     ),
                     shape = RoundedCornerShape(8.dp)
                 )

@@ -320,6 +320,14 @@ fun ContainersScreen(
                 viewModel.openEditSystem(null)
                 viewModel.setActiveContainer(system.id)
                 viewModel.selectTab(MainTab.TERMINAL)
+            },
+            onTestFailover = {
+                viewModel.triggerProotFallback(system.id, "Simulated kernel namespace failure (CONFIG_USER_NS=n / clone3 restriction)")
+                viewModel.openEditSystem(null)
+            },
+            onRestorePodman = {
+                viewModel.restorePodmanEngine(system.id)
+                viewModel.openEditSystem(null)
             }
         )
     }
@@ -392,12 +400,39 @@ fun ContainerSystemCard(
                             } else if (system.isRecommended) {
                                 StatusBadge(text = "Recommended", type = BadgeType.RECOMMENDED)
                             }
+
+                            if (system.isFallbackEngaged) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFFFEF3C7))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Shield,
+                                            contentDescription = null,
+                                            tint = Color(0xFFD97706),
+                                            modifier = Modifier.size(10.dp)
+                                        )
+                                        Text(
+                                            text = "PRoot Fallback",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFB45309)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         Text(
-                            text = "${system.version} • ${system.architecture} • ${if (system.engineType.contains("Podman")) "Podman" else "PRoot"}",
+                            text = "${system.version} • ${system.architecture} • ${if (system.isFallbackEngaged) "PRoot (Fallback)" else if (system.engineType.contains("Podman")) "Podman (PRoot Guard)" else "PRoot"}",
                             fontSize = 11.sp,
-                            color = UDroidTextSecondary,
+                            color = if (system.isFallbackEngaged) Color(0xFFB45309) else UDroidTextSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -592,12 +627,15 @@ fun SystemConfigDialog(
     onDismiss: () -> Unit,
     onSave: (ContainerSystemEntity) -> Unit,
     onDelete: () -> Unit,
-    onOpenTerminal: () -> Unit
+    onOpenTerminal: () -> Unit,
+    onTestFailover: () -> Unit,
+    onRestorePodman: () -> Unit
 ) {
     var engine by remember { mutableStateOf(system.engineType) }
     var ports by remember { mutableStateOf(system.portMappings) }
     var simd by remember { mutableStateOf(system.neonSimdEnabled) }
     var ramMb by remember { mutableStateOf(system.memoryLimitMb.toString()) }
+    var autoFallback by remember { mutableStateOf(system.autoFallbackToProot) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -634,6 +672,101 @@ fun SystemConfigDialog(
                                 selectedLabelColor = UDroidGreen
                             )
                         )
+                    }
+                }
+
+                // PRoot Fallback Resilience Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (system.isFallbackEngaged) Color(0xFFFEF3C7) else Color(0xFFF0FDF4)
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (system.isFallbackEngaged) Color(0xFFFDE68A) else Color(0xFFDCFCE7)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Shield,
+                                    contentDescription = null,
+                                    tint = if (system.isFallbackEngaged) Color(0xFFD97706) else UDroidGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Auto PRoot Fallback Guard",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (system.isFallbackEngaged) Color(0xFF92400E) else UDroidGreenDark
+                                )
+                            }
+
+                            Switch(
+                                checked = autoFallback,
+                                onCheckedChange = { autoFallback = it },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = UDroidGreen
+                                ),
+                                modifier = Modifier.height(24.dp)
+                            )
+                        }
+
+                        Text(
+                            text = if (system.isFallbackEngaged)
+                                "⚠️ PRoot-Distro (ptrace syscall emulation) is currently active because Podman encountered a kernel user-namespace restriction."
+                            else
+                                "If Podman encounters Android kernel namespace or seccomp clone3 restrictions, the container will seamlessly fall back to PRoot-Distro.",
+                            fontSize = 11.sp,
+                            color = if (system.isFallbackEngaged) Color(0xFF78350F) else UDroidTextSecondary,
+                            lineHeight = 15.sp
+                        )
+
+                        if (system.isInstalled) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                if (system.isFallbackEngaged) {
+                                    OutlinedButton(
+                                        onClick = onRestorePodman,
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(28.dp),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(12.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Restore Podman", fontSize = 11.sp)
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = onTestFailover,
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        modifier = Modifier.height(28.dp),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(12.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Test Failover to PRoot", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -713,6 +846,7 @@ fun SystemConfigDialog(
                         portMappings = ports,
                         neonSimdEnabled = simd,
                         memoryLimitMb = ramMb.toIntOrNull() ?: 1024,
+                        autoFallbackToProot = autoFallback,
                         isInstalled = true
                     )
                     onSave(updated)

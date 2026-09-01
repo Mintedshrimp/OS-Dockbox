@@ -29,5 +29,8 @@ data class ContainerSystemEntity(
     val downloads: String = "1.2M",
     val likes: String = "12.4k",
     val popularity: String = "98%",
+    val autoFallbackToProot: Boolean = true,
+    val isFallbackEngaged: Boolean = false,
+    val fallbackReason: String = "",
     val installedTimestamp: Long = System.currentTimeMillis()
 )
