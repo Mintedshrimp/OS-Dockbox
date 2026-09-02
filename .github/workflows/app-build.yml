@@ -38,8 +38,9 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-  
+
       - name: Build Release APK
+        shell: bash
         run: ./gradlew assembleRelease
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE }}
