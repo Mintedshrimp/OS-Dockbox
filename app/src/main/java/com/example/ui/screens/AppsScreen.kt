@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,9 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.ContainerAppEntity
-import com.example.ui.components.HeaderBar
+import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.ContainerViewModel
+import com.example.ui.viewmodel.DesktopWindowMode
 
 @Composable
 fun AppsScreen(
@@ -33,19 +35,53 @@ fun AppsScreen(
     modifier: Modifier = Modifier
 ) {
     val allApps by viewModel.allApps.collectAsStateWithLifecycle()
+    val allSystems by viewModel.allSystems.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQueryApps.collectAsStateWithLifecycle()
     val activeContainerId by viewModel.activeContainerId.collectAsStateWithLifecycle()
+    val appTypeFilter by viewModel.appTypeFilter.collectAsStateWithLifecycle()
+    val diskImages by viewModel.diskImages.collectAsStateWithLifecycle()
 
-    val filteredApps = remember(allApps, searchQuery) {
-        if (searchQuery.isBlank()) allApps
-        else allApps.filter {
-            it.name.contains(searchQuery, ignoreCase = true) ||
-                    it.category.contains(searchQuery, ignoreCase = true) ||
-                    it.displayType.contains(searchQuery, ignoreCase = true)
+    val showAddAppDialog by viewModel.showAddAppDialog.collectAsStateWithLifecycle()
+    val showRootfsInstallerDialog by viewModel.showRootfsInstallerDialog.collectAsStateWithLifecycle()
+    val showCreateDiskDialog by viewModel.showCreateDiskDialog.collectAsStateWithLifecycle()
+    val showDesktopViewer by viewModel.showDesktopViewer.collectAsStateWithLifecycle()
+
+    var showNetworkDiagnostics by remember { mutableStateOf(false) }
+    var showDiskManager by remember { mutableStateOf(false) }
+    var interactiveAppLaunch by remember { mutableStateOf<String?>(null) }
+
+    val installedContainers = remember(allSystems) { allSystems.filter { it.isInstalled } }
+    val activeSystem = remember(installedContainers, activeContainerId) {
+        installedContainers.firstOrNull { it.id == activeContainerId } ?: installedContainers.firstOrNull()
+    }
+
+    // Apps filtered by active container AND user/system filter AND search query
+    val containerApps = remember(allApps, activeSystem) {
+        if (activeSystem == null) allApps
+        else allApps.filter { it.containerId == activeSystem.id }
+    }
+
+    val filteredApps = remember(containerApps, appTypeFilter, searchQuery) {
+        containerApps.filter { app ->
+            val matchesType = when (appTypeFilter) {
+                "USER" -> app.isUserApp
+                "SYSTEM" -> !app.isUserApp
+                "RUNNING" -> app.isRunning
+                else -> true
+            }
+            val matchesSearch = if (searchQuery.isBlank()) true else {
+                app.name.contains(searchQuery, ignoreCase = true) ||
+                        app.category.contains(searchQuery, ignoreCase = true) ||
+                        app.displayType.contains(searchQuery, ignoreCase = true) ||
+                        app.description.contains(searchQuery, ignoreCase = true)
+            }
+            matchesType && matchesSearch
         }
     }
 
-    val runningCount = allApps.count { it.isRunning }
+    val userAppCount = remember(containerApps) { containerApps.count { it.isUserApp } }
+    val systemAppCount = remember(containerApps) { containerApps.count { !it.isUserApp } }
+    val runningAppCount = remember(containerApps) { containerApps.count { it.isRunning } }
 
     LazyColumn(
         modifier = modifier
@@ -56,7 +92,7 @@ fun AppsScreen(
         item {
             HeaderBar(
                 title = "OS Dockbox",
-                statusText = "SESSION LIVE",
+                statusText = if (activeSystem?.isRunning == true) "SESSION LIVE" else "PODMAN READY",
                 version = "v0.1.1"
             )
         }
@@ -72,15 +108,15 @@ fun AppsScreen(
             ) {
                 Column {
                     Text(
-                        text = "Linux apps",
-                        fontSize = 32.sp,
+                        text = "Apps & Mini OS",
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Black,
                         color = UDroidTextPrimary,
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "${allApps.size} apps • $activeContainerId • 232 ms",
-                        fontSize = 14.sp,
+                        text = "${activeSystem?.name ?: "All Distros"} • ${filteredApps.size} apps available",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = UDroidTextSecondary
                     )
@@ -90,66 +126,194 @@ fun AppsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Add Custom App Button
                     IconButton(
-                        onClick = { viewModel.showDesktop(true) },
+                        onClick = { viewModel.setShowAddAppDialog(true) },
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add User App",
+                            tint = UDroidGreen
+                        )
+                    }
+
+                    // Open Desktop Viewer Button
+                    IconButton(
+                        onClick = {
+                            interactiveAppLaunch = null
+                            viewModel.showDesktop(true)
+                        },
+                        modifier = Modifier
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(Color.White)
                     ) {
                         Icon(
                             imageVector = Icons.Default.DesktopWindows,
-                            contentDescription = "Open Graphical Desktop",
+                            contentDescription = "Open Desktop GUI",
                             tint = UDroidGreen
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { /* Refresh app registry */ },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = UDroidTextSecondary
                         )
                     }
                 }
             }
         }
 
-        // Active Status Banner (matches screenshot)
+        // Quick Feature Launcher Bar (Interactive Desktop, Net Diagnostics, Disk Images, Root Installer)
         item {
-            val runningApp = allApps.firstOrNull { it.isRunning }
-            Card(
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFDCFCE7)),
-                border = BorderStroke(1.dp, Color(0xFFBBF7D0))
+                    .padding(vertical = 6.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF16A34A))
+                item {
+                    AppSuiteFeatureChip(
+                        icon = Icons.Default.DesktopWindows,
+                        iconBg = Color(0xFFEFF5F2),
+                        iconTint = UDroidGreen,
+                        label = "Desktop GUI",
+                        tag = "X11/VNC",
+                        onClick = {
+                            interactiveAppLaunch = "Chromium"
+                            viewModel.showDesktop(true)
+                        }
                     )
-                    Text(
-                        text = if (runningApp != null) "Running ${runningApp.name} on DISPLAY :0" else "Display server active • DISPLAY :0 ready",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF15803D)
+                }
+                item {
+                    AppSuiteFeatureChip(
+                        icon = Icons.Default.Speed,
+                        iconBg = Color(0xFFE0F2FE),
+                        iconTint = Color(0xFF0284C7),
+                        label = "Net Diagnostics",
+                        tag = "Ping/Speed",
+                        onClick = { showNetworkDiagnostics = true }
+                    )
+                }
+                item {
+                    AppSuiteFeatureChip(
+                        icon = Icons.Default.Storage,
+                        iconBg = Color(0xFFFEF3C7),
+                        iconTint = Color(0xFFD97706),
+                        label = "Disk Images",
+                        tag = ".qcow2/SAF",
+                        onClick = { showDiskManager = true }
+                    )
+                }
+                item {
+                    AppSuiteFeatureChip(
+                        icon = Icons.Default.DownloadForOffline,
+                        iconBg = Color(0xFFDCFCE7),
+                        iconTint = Color(0xFF15803D),
+                        label = "Root Installer",
+                        tag = "Mini OS",
+                        onClick = { viewModel.setShowRootfsInstallerDialog(true) }
+                    )
+                }
+            }
+        }
+
+        // Container Selector Strip (View apps inside selected container)
+        item {
+            Column(modifier = Modifier.padding(start = 24.dp, top = 6.dp, bottom = 4.dp)) {
+                Text(
+                    text = "TARGET CONTAINER",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = UDroidTextMuted,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+
+        item {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(installedContainers, key = { it.id }) { container ->
+                    val isSelected = (activeSystem?.id == container.id)
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.setActiveContainer(container.id) },
+                        label = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                if (container.isRunning) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF16A34A))
+                                    )
+                                }
+                                Text(
+                                    text = container.name,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFE2EFE7),
+                            selectedLabelColor = UDroidGreen,
+                            containerColor = Color.White,
+                            labelColor = UDroidTextSecondary
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = if (isSelected) UDroidGreen else UDroidCardBorder
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+        }
+
+        // User vs System App Filter Tabs
+        item {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val appFilters = listOf(
+                    "ALL" to "All Apps (${containerApps.size})",
+                    "USER" to "User Apps ($userAppCount)",
+                    "SYSTEM" to "System / Core ($systemAppCount)",
+                    "RUNNING" to "Running ($runningAppCount)"
+                )
+
+                items(appFilters) { (filterKey, label) ->
+                    val isSelected = appTypeFilter == filterKey
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.setAppTypeFilter(filterKey) },
+                        label = { Text(label, fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = if (filterKey == "USER") Color(0xFFDCFCE7) else if (filterKey == "SYSTEM") Color(0xFFE0F2FE) else UDroidGreen,
+                            selectedLabelColor = if (filterKey == "ALL") Color.White else UDroidTextPrimary,
+                            containerColor = Color.White,
+                            labelColor = UDroidTextSecondary
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = if (isSelected) UDroidGreen else UDroidCardBorder
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
@@ -162,9 +326,9 @@ fun AppsScreen(
                 onValueChange = { viewModel.setSearchQueryApps(it) },
                 placeholder = {
                     Text(
-                        text = "Search installed apps",
+                        text = "Search apps in ${activeSystem?.name ?: "container"}...",
                         color = UDroidTextMuted,
-                        fontSize = 14.sp
+                        fontSize = 13.sp
                     )
                 },
                 leadingIcon = {
@@ -183,7 +347,7 @@ fun AppsScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 6.dp),
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
@@ -195,13 +359,150 @@ fun AppsScreen(
             )
         }
 
+        // Section header
+        item {
+            Column(modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 4.dp)) {
+                Text(
+                    text = "${appTypeFilter.uppercase()} APPLICATIONS (${filteredApps.size})",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = UDroidTextMuted,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+
+        if (filteredApps.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, UDroidCardBorder)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.Apps, contentDescription = null, tint = UDroidTextMuted, modifier = Modifier.size(36.dp))
+                        Text("No applications found", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = UDroidTextPrimary)
+                        Text(
+                            text = "Tap '+ Add App' or switch target container to see installed packages.",
+                            fontSize = 12.sp,
+                            color = UDroidTextSecondary
+                        )
+                    }
+                }
+            }
+        }
+
         // List of Apps
         items(filteredApps, key = { it.id }) { app ->
             AppItemCard(
                 app = app,
                 onToggle = { viewModel.toggleApp(app) },
-                onLaunchDesktop = { viewModel.showDesktop(true) }
+                onLaunchFullscreen = {
+                    viewModel.launchAppInDesktop(app.name, DesktopWindowMode.FULLSCREEN)
+                },
+                onLaunchFreeform = {
+                    viewModel.launchAppInDesktop(app.name, DesktopWindowMode.FREEFORM)
+                },
+                onLaunchPip = {
+                    viewModel.launchAppInDesktop(app.name, DesktopWindowMode.PIP)
+                }
             )
+        }
+    }
+
+    // Dialogs
+    if (showNetworkDiagnostics) {
+        NetworkDiagnosticsDialog(
+            containerName = activeSystem?.name ?: "Container eth0",
+            onDismiss = { showNetworkDiagnostics = false }
+        )
+    }
+
+    if (showDiskManager) {
+        DiskImageManagerDialog(
+            diskImages = diskImages,
+            onDismiss = { showDiskManager = false },
+            onCreateDisk = {
+                showDiskManager = false
+                viewModel.setShowCreateDiskDialog(true)
+            },
+            onExportDisk = { disk -> viewModel.exportDiskFile(disk) },
+            onDeleteDisk = { diskId -> viewModel.deleteDiskImage(diskId) }
+        )
+    }
+
+    if (showAddAppDialog) {
+        AddCustomAppDialog(
+            installedContainers = installedContainers,
+            selectedContainerId = activeSystem?.id,
+            onDismiss = { viewModel.setShowAddAppDialog(false) },
+            onAddApp = { containerId, name, category, command, displayType, description, port ->
+                viewModel.addCustomUserApp(containerId, name, category, command, displayType, description, port)
+            }
+        )
+    }
+
+    if (showRootfsInstallerDialog) {
+        RootInstallerDialog(
+            onDismiss = { viewModel.setShowRootfsInstallerDialog(false) },
+            onInstallRootfs = { name, fileName, sizeMb, engine ->
+                viewModel.installCustomRootfsTarball(name, fileName, sizeMb, engine)
+            }
+        )
+    }
+
+    if (showCreateDiskDialog) {
+        CreateDiskImageDialog(
+            onDismiss = { viewModel.setShowCreateDiskDialog(false) },
+            onCreateDisk = { fileName, format, partition, size, block, preallocate ->
+                viewModel.createDiskImage(fileName, format, partition, size, block, preallocate)
+            }
+        )
+    }
+}
+
+@Composable
+fun AppSuiteFeatureChip(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    label: String,
+    tag: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, UDroidCardBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(iconBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(16.dp))
+            }
+            Column {
+                Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = UDroidTextPrimary)
+                Text(tag, fontSize = 10.sp, color = UDroidTextSecondary)
+            }
         }
     }
 }
@@ -210,32 +511,34 @@ fun AppsScreen(
 fun AppItemCard(
     app: ContainerAppEntity,
     onToggle: () -> Unit,
-    onLaunchDesktop: () -> Unit
+    onLaunchFullscreen: () -> Unit,
+    onLaunchFreeform: () -> Unit,
+    onLaunchPip: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 5.dp),
-        shape = RoundedCornerShape(18.dp),
+            .padding(horizontal = 20.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = UDroidCardSurface),
         border = BorderStroke(1.dp, UDroidCardBorder)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 // Category Icon
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(42.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(getAppIconBg(app.category)),
                     contentAlignment = Alignment.Center
@@ -244,38 +547,58 @@ fun AppItemCard(
                         imageVector = getAppIconVector(app.name, app.category),
                         contentDescription = app.name,
                         tint = getAppIconTint(app.category),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
                 Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = app.name,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = UDroidTextPrimary,
+                            maxLines = 1
+                        )
+                        // User vs System Badge
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (app.isUserApp) Color(0xFFDCFCE7) else Color(0xFFE2E8F0)
+                        ) {
+                            Text(
+                                text = if (app.isUserApp) "USER" else "SYS",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (app.isUserApp) Color(0xFF15803D) else Color(0xFF475569),
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+
                     Text(
-                        text = app.name,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = UDroidTextPrimary,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = getAppSubtitle(app.name),
-                        fontSize = 12.sp,
+                        text = if (app.description.isNotBlank()) app.description else getAppSubtitle(app.name),
+                        fontSize = 11.sp,
                         color = UDroidTextSecondary,
                         maxLines = 1
                     )
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.padding(top = 2.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.DesktopWindows,
+                            imageVector = if (app.displayType.contains("PORT")) Icons.Default.Language else if (app.displayType.contains("CLI")) Icons.Default.Terminal else Icons.Default.DesktopWindows,
                             contentDescription = null,
                             tint = UDroidTextMuted,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(11.dp)
                         )
                         Text(
                             text = app.displayType,
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = UDroidTextMuted
                         )
@@ -283,20 +606,47 @@ fun AppItemCard(
                 }
             }
 
-            // Launch & External Open Button
+            // Window Mode Launch Buttons & Main Toggle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                // Freeform Floating Window Launch
                 IconButton(
-                    onClick = onLaunchDesktop,
-                    modifier = Modifier.size(36.dp)
+                    onClick = onLaunchFreeform,
+                    modifier = Modifier.size(30.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FitScreen,
+                        contentDescription = "Open Freeform",
+                        tint = Color(0xFF0284C7),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // PiP Window Launch
+                IconButton(
+                    onClick = onLaunchPip,
+                    modifier = Modifier.size(30.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PictureInPicture,
+                        contentDescription = "Open PiP",
+                        tint = Color(0xFF15803D),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Fullscreen Launch
+                IconButton(
+                    onClick = onLaunchFullscreen,
+                    modifier = Modifier.size(30.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = "Open in display",
                         tint = UDroidGreen,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
@@ -305,12 +655,12 @@ fun AppItemCard(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (app.isRunning) Color(0xFF14532D) else UDroidGreen
                     ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = if (app.isRunning) "Running" else "Launch",
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -321,15 +671,22 @@ fun AppItemCard(
 
 fun getAppSubtitle(name: String): String {
     return when {
-        name.contains("Network") -> "Manage and change your network connection..."
-        name.contains("Chromium") -> "Web Browser"
-        name.contains("Files") -> "Access and organize files"
-        name.contains("Print") -> "Print Settings"
-        name.contains("UXTerm") -> "xterm wrapper for Unicode environments"
-        name.contains("XTerm") -> "standard terminal emulator for the X window..."
-        name.contains("VS Code") -> "Web IDE development workspace"
-        name.contains("HTOP") -> "Real-time process & resource viewer"
-        else -> "Containerized system utility"
+        name.contains("Network") -> "Manage and change network interfaces"
+        name.contains("Chromium") -> "Hardware accelerated web browser"
+        name.contains("Files") || name.contains("Nautilus") -> "Root filesystem file explorer"
+        name.contains("Print") -> "CUPS printer daemon management"
+        name.contains("UXTerm") -> "Unicode terminal emulator"
+        name.contains("XTerm") -> "Standard X11 terminal client"
+        name.contains("VS Code") -> "Code-server web IDE workspace"
+        name.contains("HTOP") -> "Real-time process & CPU viewer"
+        name.contains("GIMP") -> "GNU raster image editor"
+        name.contains("Jupyter") -> "Computational data science notebooks"
+        name.contains("Neovim") -> "Hyperextensible terminal code editor"
+        name.contains("Git") -> "Distributed version control engine"
+        name.contains("XFCE") -> "Lightweight desktop session"
+        name.contains("Phosh") -> "Mobile-friendly Wayland shell"
+        name.contains("FLWM") -> "Fast Light Window Manager"
+        else -> "Containerized application utility"
     }
 }
 
@@ -355,11 +712,14 @@ fun getAppIconVector(name: String, category: String): ImageVector {
     return when {
         name.contains("Network") -> Icons.Default.Settings
         name.contains("Chromium") -> Icons.Default.Language
-        name.contains("Files") -> Icons.Default.Folder
+        name.contains("Files") || name.contains("Nautilus") -> Icons.Default.Folder
         name.contains("Print") -> Icons.Default.Print
-        name.contains("Term") -> Icons.Default.Terminal
-        name.contains("VS Code") -> Icons.Default.Code
-        name.contains("HTOP") -> Icons.Default.Equalizer
+        name.contains("Term") || name.contains("Bash") || name.contains("Shell") -> Icons.Default.Terminal
+        name.contains("VS Code") || name.contains("Neovim") || name.contains("Git") || name.contains("Notebook") || name.contains("Torch") -> Icons.Default.Code
+        name.contains("HTOP") || name.contains("Speed") -> Icons.Default.Equalizer
+        name.contains("GIMP") -> Icons.Default.Brush
+        name.contains("XFCE") || name.contains("Phosh") || name.contains("FLWM") || name.contains("Desktop") -> Icons.Default.DesktopWindows
         else -> Icons.Default.Widgets
     }
 }
+

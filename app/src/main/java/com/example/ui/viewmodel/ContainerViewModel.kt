@@ -28,6 +28,13 @@ enum class MainTab(val title: String) {
     ABOUT("About")
 }
 
+enum class DesktopWindowMode {
+    FULLSCREEN,
+    FREEFORM,
+    PIP,
+    HIDDEN
+}
+
 data class ToolInfoData(
     val title: String,
     val subtitle: String,
@@ -65,10 +72,13 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
     private val _searchQueryApps = MutableStateFlow("")
     val searchQueryApps = _searchQueryApps.asStateFlow()
 
-    private val _systemFilter = MutableStateFlow("ALL") // "ALL", "INSTALLED", "PODMAN", "PROOT", "RUNNING"
+    private val _appTypeFilter = MutableStateFlow("ALL") // "ALL", "USER", "SYSTEM", "RUNNING"
+    val appTypeFilter = _appTypeFilter.asStateFlow()
+
+    private val _systemFilter = MutableStateFlow("ALL") // "ALL", "INSTALLED", "PODMAN", "PROOT", "MINI_OS", "RUNNING"
     val systemFilter = _systemFilter.asStateFlow()
 
-    private val _activeContainerId = MutableStateFlow<String?>(null)
+    private val _activeContainerId = MutableStateFlow<String?>("debian-trixie")
     val activeContainerId = _activeContainerId.asStateFlow()
 
     // Terminal State
@@ -91,6 +101,12 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
     private val _showNewContainerDialog = MutableStateFlow(false)
     val showNewContainerDialog = _showNewContainerDialog.asStateFlow()
 
+    private val _showAddAppDialog = MutableStateFlow(false)
+    val showAddAppDialog = _showAddAppDialog.asStateFlow()
+
+    private val _showRootfsInstallerDialog = MutableStateFlow(false)
+    val showRootfsInstallerDialog = _showRootfsInstallerDialog.asStateFlow()
+
     private val _showConvertDialog = MutableStateFlow(false)
     val showConvertDialog = _showConvertDialog.asStateFlow()
 
@@ -108,6 +124,21 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _showDesktopViewer = MutableStateFlow(false)
     val showDesktopViewer = _showDesktopViewer.asStateFlow()
+
+    private val _desktopWindowMode = MutableStateFlow(DesktopWindowMode.HIDDEN)
+    val desktopWindowMode = _desktopWindowMode.asStateFlow()
+
+    private val _desktopActiveWindow = MutableStateFlow("Chromium")
+    val desktopActiveWindow = _desktopActiveWindow.asStateFlow()
+
+    private val _desktopSelectedWm = MutableStateFlow("XFCE4")
+    val desktopSelectedWm = _desktopSelectedWm.asStateFlow()
+
+    private val _desktopResolution = MutableStateFlow("1280x720 (HD)")
+    val desktopResolution = _desktopResolution.asStateFlow()
+
+    private val _desktopTouchMode = MutableStateFlow(true)
+    val desktopTouchMode = _desktopTouchMode.asStateFlow()
 
     private val _selectedSystemForEdit = MutableStateFlow<ContainerSystemEntity?>(null)
     val selectedSystemForEdit = _selectedSystemForEdit.asStateFlow()
@@ -216,8 +247,20 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
         _searchQueryApps.value = query
     }
 
+    fun setAppTypeFilter(filter: String) {
+        _appTypeFilter.value = filter
+    }
+
     fun setSystemFilter(filter: String) {
         _systemFilter.value = filter
+    }
+
+    fun setShowAddAppDialog(show: Boolean) {
+        _showAddAppDialog.value = show
+    }
+
+    fun setShowRootfsInstallerDialog(show: Boolean) {
+        _showRootfsInstallerDialog.value = show
     }
 
     fun setActiveContainer(id: String) {
@@ -235,10 +278,48 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
     fun showDesktop(show: Boolean) {
         _showDesktopViewer.value = show
         if (show) {
+            if (_desktopWindowMode.value == DesktopWindowMode.HIDDEN) {
+                _desktopWindowMode.value = DesktopWindowMode.FULLSCREEN
+            }
             viewModelScope.launch {
                 repository.logEvent("desktop_opened", "Attached interactive DISPLAY :0 X11 surface", "SUCCESS")
             }
+        } else {
+            _desktopWindowMode.value = DesktopWindowMode.HIDDEN
         }
+    }
+
+    fun setDesktopWindowMode(mode: DesktopWindowMode) {
+        _desktopWindowMode.value = mode
+        _showDesktopViewer.value = (mode != DesktopWindowMode.HIDDEN)
+        viewModelScope.launch {
+            repository.logEvent("desktop_mode_changed", "Desktop mode switched to ${mode.name}", "INFO")
+        }
+    }
+
+    fun launchAppInDesktop(appName: String, mode: DesktopWindowMode = DesktopWindowMode.FULLSCREEN) {
+        _desktopActiveWindow.value = appName
+        _desktopWindowMode.value = mode
+        _showDesktopViewer.value = true
+        viewModelScope.launch {
+            repository.logEvent("app_launched_desktop", "Launched $appName in mode ${mode.name}", "SUCCESS")
+        }
+    }
+
+    fun setDesktopActiveWindow(win: String) {
+        _desktopActiveWindow.value = win
+    }
+
+    fun setDesktopSelectedWm(wm: String) {
+        _desktopSelectedWm.value = wm
+    }
+
+    fun setDesktopResolution(res: String) {
+        _desktopResolution.value = res
+    }
+
+    fun toggleDesktopTouchMode() {
+        _desktopTouchMode.value = !_desktopTouchMode.value
     }
 
     fun openEditSystem(system: ContainerSystemEntity?) {
@@ -808,6 +889,58 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
     fun removePortBridgeRule(id: String) {
         _portBridgeRules.value = _portBridgeRules.value.filterNot { it.id == id }
         _userMessage.value = "Port forward rule removed."
+    }
+
+    fun addCustomUserApp(
+        containerId: String,
+        appName: String,
+        category: String,
+        command: String,
+        displayType: String,
+        description: String,
+        port: Int = 0
+    ) {
+        viewModelScope.launch {
+            _showAddAppDialog.value = false
+            repository.addCustomApp(
+                containerId = containerId,
+                appName = appName,
+                category = category,
+                command = command,
+                displayType = displayType,
+                description = description,
+                port = port
+            )
+            _userMessage.value = "Installed '$appName' into container!"
+        }
+    }
+
+    fun installCustomRootfsTarball(
+        name: String,
+        fileName: String,
+        fileSizeMb: Long,
+        engine: String
+    ) {
+        viewModelScope.launch {
+            _showRootfsInstallerDialog.value = false
+            _userMessage.value = "Unpacking rootfs tarball '$fileName'..."
+            repository.installCustomRootfs(
+                name = name,
+                fileName = fileName,
+                fileSizeMb = fileSizeMb,
+                engine = engine
+            ) { progress, status ->
+                // Progress callback
+            }
+            _userMessage.value = "Mini OS rootfs '$name' installed and ready in catalog!"
+        }
+    }
+
+    fun exportDiskFile(item: DiskImageItem) {
+        viewModelScope.launch {
+            repository.logEvent("disk_exported", "Exported ${item.fileName} (${item.sizeGb} GB) to Downloads folder", "SUCCESS")
+            _userMessage.value = "Exported ${item.fileName} to device storage!"
+        }
     }
 
     fun clearSupervisorJournal() {

@@ -480,9 +480,11 @@ fun HomeScreen(
                     icon = Icons.Default.DesktopWindows,
                     iconBg = Color(0xFFEFF5F2),
                     iconTint = UDroidTextPrimary,
-                    title = "Desktop",
-                    subtitle = "Open graphical Linux desktop (DISPLAY :0)",
-                    onClick = { viewModel.showDesktop(true) }
+                    title = "Interactive Desktop",
+                    subtitle = "X11/Wayland Desktop with Fullscreen, Freeform & PiP modes",
+                    badgeText = "PiP / Windowed",
+                    badgeColor = UDroidGreen,
+                    onClick = { viewModel.setDesktopWindowMode(com.example.ui.viewmodel.DesktopWindowMode.FULLSCREEN) }
                 )
 
                 HomeNavCard(

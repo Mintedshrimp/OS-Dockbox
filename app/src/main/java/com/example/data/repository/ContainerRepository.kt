@@ -266,84 +266,347 @@ class ContainerRepository(private val dao: ContainerDao) {
                     downloads = "8.9M",
                     likes = "43.7k",
                     popularity = "98%"
+                ),
+                ContainerSystemEntity(
+                    id = "tinycore-linux",
+                    name = "TinyCore Linux (CorePlus)",
+                    version = "15.0 ARM64 (FLWM)",
+                    flavor = "TinyCore",
+                    architecture = "aarch64",
+                    engineType = "PRoot-Distro",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = true,
+                    desktopEnv = "FLWM Light GUI",
+                    diskUsageMb = 0,
+                    portMappings = "5901:5901",
+                    neonSimdEnabled = true,
+                    statusBadge = "Mini OS (16MB)",
+                    author = "Robert Shingledecker",
+                    downloads = "2.3M",
+                    likes = "18.2k",
+                    popularity = "96%"
+                ),
+                ContainerSystemEntity(
+                    id = "postmarketos-edge",
+                    name = "postmarketOS Edge",
+                    version = "Edge (Phosh / Alpine Base)",
+                    flavor = "postmarketOS",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = false,
+                    desktopEnv = "Phosh Mobile Shell",
+                    diskUsageMb = 0,
+                    portMappings = "8080:80",
+                    neonSimdEnabled = true,
+                    statusBadge = "Mini OS (Alpine)",
+                    author = "pmOS Team",
+                    downloads = "3.4M",
+                    likes = "27.1k",
+                    popularity = "97%"
+                ),
+                ContainerSystemEntity(
+                    id = "busybox-micro",
+                    name = "BusyBox Micro OS",
+                    version = "1.36.1 Single Binary",
+                    flavor = "BusyBox",
+                    architecture = "aarch64",
+                    engineType = "PRoot-Distro",
+                    isInstalled = false,
+                    isRunning = false,
+                    desktopEnv = "Minimal Ash Shell",
+                    diskUsageMb = 0,
+                    neonSimdEnabled = true,
+                    statusBadge = "Micro (2.4MB)",
+                    author = "Denys Vlasenko",
+                    downloads = "5.1M",
+                    likes = "31.9k",
+                    popularity = "99%"
                 )
             )
             dao.insertSystems(defaultSystems)
 
-            // Seed default apps for debian-trixie
+            // Seed default apps for various containers
             val defaultApps = listOf(
+                // Debian Trixie Apps
                 ContainerAppEntity(
-                    id = "app-network",
+                    id = "app-debian-network",
                     containerId = "debian-trixie",
                     name = "Advanced Network Configuration",
                     category = "System",
                     command = "nm-connection-editor",
                     displayType = "DISPLAY :0",
-                    iconName = "settings"
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "Core network interface configuration utility"
                 ),
                 ContainerAppEntity(
-                    id = "app-chromium",
+                    id = "app-debian-chromium",
                     containerId = "debian-trixie",
                     name = "Chromium Web Browser",
                     category = "Web",
                     command = "chromium --no-sandbox",
                     displayType = "DISPLAY :0",
                     iconName = "browser",
-                    isRunning = true
+                    isRunning = true,
+                    isUserApp = true,
+                    description = "Full desktop browser with NEON raster acceleration"
                 ),
                 ContainerAppEntity(
-                    id = "app-files",
+                    id = "app-debian-files",
                     containerId = "debian-trixie",
-                    name = "Files",
+                    name = "Nautilus Files",
                     category = "System",
                     command = "nautilus --new-window",
                     displayType = "DISPLAY :0",
-                    iconName = "files"
+                    iconName = "files",
+                    isUserApp = false,
+                    description = "Root filesystem file explorer and directory manager"
                 ),
                 ContainerAppEntity(
-                    id = "app-print",
+                    id = "app-debian-print",
                     containerId = "debian-trixie",
                     name = "Print Settings",
                     category = "System",
                     command = "system-config-printer",
                     displayType = "DISPLAY :0",
-                    iconName = "print"
+                    iconName = "print",
+                    isUserApp = false,
+                    description = "CUPS printer daemon management tool"
                 ),
                 ContainerAppEntity(
-                    id = "app-uxterm",
+                    id = "app-debian-uxterm",
                     containerId = "debian-trixie",
                     name = "UXTerm",
                     category = "Development",
                     command = "uxterm -fa 'Monospace' -fs 12",
                     displayType = "DISPLAY :0",
-                    iconName = "terminal"
+                    iconName = "terminal",
+                    isUserApp = false,
+                    description = "Unicode terminal emulator for X window system"
                 ),
                 ContainerAppEntity(
-                    id = "app-xterm",
+                    id = "app-debian-xterm",
                     containerId = "debian-trixie",
                     name = "XTerm",
                     category = "Development",
                     command = "xterm",
                     displayType = "DISPLAY :0",
-                    iconName = "terminal"
+                    iconName = "terminal",
+                    isUserApp = false,
+                    description = "Standard X11 terminal client"
                 ),
                 ContainerAppEntity(
-                    id = "app-vscode",
+                    id = "app-debian-vscode",
                     containerId = "debian-trixie",
                     name = "VS Code Server",
                     category = "Development",
                     command = "code-server --bind-addr 127.0.0.1:8080 --auth none",
                     displayType = "PORT 8080",
-                    iconName = "code"
+                    iconName = "code",
+                    isUserApp = true,
+                    port = 8080,
+                    description = "Full web-based VS Code IDE environment"
                 ),
                 ContainerAppEntity(
-                    id = "app-htop",
+                    id = "app-debian-htop",
                     containerId = "debian-trixie",
                     name = "HTOP System Monitor",
                     category = "Utility",
                     command = "htop",
                     displayType = "CLI Terminal",
-                    iconName = "monitor"
+                    iconName = "monitor",
+                    isUserApp = true,
+                    description = "Interactive process viewer and resource analyzer"
+                ),
+                ContainerAppEntity(
+                    id = "app-debian-gimp",
+                    containerId = "debian-trixie",
+                    name = "GIMP Image Editor",
+                    category = "Utility",
+                    command = "gimp",
+                    displayType = "DISPLAY :0",
+                    iconName = "graphics",
+                    isUserApp = true,
+                    description = "GNU Image Manipulation Program (2D Raster Graphic Editor)"
+                ),
+
+                // Ubuntu 24.04 LTS Apps
+                ContainerAppEntity(
+                    id = "app-ubuntu-bash",
+                    containerId = "ubuntu-2404-lts",
+                    name = "GNU Bash 5.2",
+                    category = "System",
+                    command = "/bin/bash",
+                    displayType = "CLI Terminal",
+                    iconName = "terminal",
+                    isUserApp = false,
+                    description = "Default Ubuntu POSIX login shell"
+                ),
+                ContainerAppEntity(
+                    id = "app-ubuntu-apt",
+                    containerId = "ubuntu-2404-lts",
+                    name = "APT Package Manager",
+                    category = "System",
+                    command = "apt update",
+                    displayType = "CLI Terminal",
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "Debian/Ubuntu package indexing and retrieval system"
+                ),
+                ContainerAppEntity(
+                    id = "app-ubuntu-neovim",
+                    containerId = "ubuntu-2404-lts",
+                    name = "Neovim IDE",
+                    category = "Development",
+                    command = "nvim",
+                    displayType = "CLI Terminal",
+                    iconName = "code",
+                    isUserApp = true,
+                    description = "Hyperextensible Vim-based modern terminal text editor"
+                ),
+                ContainerAppEntity(
+                    id = "app-ubuntu-git",
+                    containerId = "ubuntu-2404-lts",
+                    name = "Git Version Control",
+                    category = "Development",
+                    command = "git status",
+                    displayType = "CLI Terminal",
+                    iconName = "code",
+                    isUserApp = true,
+                    description = "Fast distributed version control system"
+                ),
+                ContainerAppEntity(
+                    id = "app-ubuntu-xfce",
+                    containerId = "ubuntu-2404-lts",
+                    name = "XFCE4 Desktop Session",
+                    category = "Utility",
+                    command = "startxfce4",
+                    displayType = "DISPLAY :0",
+                    iconName = "desktop",
+                    isUserApp = true,
+                    description = "Lightweight fast modular desktop environment"
+                ),
+
+                // Alpine 3.22 (Musl) Apps
+                ContainerAppEntity(
+                    id = "app-alpine-apk",
+                    containerId = "alpine-322",
+                    name = "APK Package Manager",
+                    category = "System",
+                    command = "apk update",
+                    displayType = "CLI Terminal",
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "Alpine lightning-fast package management engine"
+                ),
+                ContainerAppEntity(
+                    id = "app-alpine-busybox",
+                    containerId = "alpine-322",
+                    name = "BusyBox Swiss Army Knife",
+                    category = "System",
+                    command = "busybox --help",
+                    displayType = "CLI Terminal",
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "Combines tiny versions of many common UNIX utilities"
+                ),
+                ContainerAppEntity(
+                    id = "app-alpine-curl",
+                    containerId = "alpine-322",
+                    name = "Curl HTTP Utility",
+                    category = "Utility",
+                    command = "curl -I https://google.com",
+                    displayType = "CLI Terminal",
+                    iconName = "web",
+                    isUserApp = true,
+                    description = "Command line network protocol transfer client"
+                ),
+
+                // Python 3.12 Apps
+                ContainerAppEntity(
+                    id = "app-python-jupyter",
+                    containerId = "docker-python-slim",
+                    name = "JupyterLab Notebooks",
+                    category = "Development",
+                    command = "jupyter lab --ip=0.0.0.0 --port=8888 --no-browser",
+                    displayType = "PORT 8888",
+                    iconName = "code",
+                    isUserApp = true,
+                    port = 8888,
+                    description = "Interactive computational data science & AI notebooks"
+                ),
+                ContainerAppEntity(
+                    id = "app-python-pip",
+                    containerId = "docker-python-slim",
+                    name = "Pip Package Installer",
+                    category = "System",
+                    command = "pip list",
+                    displayType = "CLI Terminal",
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "PyPI Python module installer"
+                ),
+                ContainerAppEntity(
+                    id = "app-python-torch",
+                    containerId = "docker-python-slim",
+                    name = "PyTorch NEON AI Engine",
+                    category = "Development",
+                    command = "python3 -c 'import torch; print(torch.__version__)'",
+                    displayType = "CLI Terminal",
+                    iconName = "code",
+                    isUserApp = true,
+                    description = "Deep learning framework with ARM NEON vector ops"
+                ),
+
+                // TinyCore Mini OS Apps
+                ContainerAppEntity(
+                    id = "app-tinycore-tce",
+                    containerId = "tinycore-linux",
+                    name = "TCE AppBrowser",
+                    category = "System",
+                    command = "tce-ab",
+                    displayType = "CLI Terminal",
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "TinyCore extension package repository browser"
+                ),
+                ContainerAppEntity(
+                    id = "app-tinycore-flwm",
+                    containerId = "tinycore-linux",
+                    name = "FLWM Window Manager",
+                    category = "Utility",
+                    command = "flwm",
+                    displayType = "DISPLAY :0",
+                    iconName = "desktop",
+                    isUserApp = true,
+                    description = "Ultra-fast Fast Light Window Manager"
+                ),
+
+                // PostmarketOS Mini OS Apps
+                ContainerAppEntity(
+                    id = "app-pmos-phosh",
+                    containerId = "postmarketos-edge",
+                    name = "Phosh Mobile Shell",
+                    category = "Utility",
+                    command = "phosh",
+                    displayType = "DISPLAY :0",
+                    iconName = "desktop",
+                    isUserApp = true,
+                    description = "Mobile-friendly Wayland shell for touch devices"
+                ),
+                ContainerAppEntity(
+                    id = "app-pmos-apk",
+                    containerId = "postmarketos-edge",
+                    name = "Alpine/PMOS Base System",
+                    category = "System",
+                    command = "pmbootstrap status",
+                    displayType = "CLI Terminal",
+                    iconName = "settings",
+                    isUserApp = false,
+                    description = "True mobile Linux userland stack"
                 )
             )
             dao.insertApps(defaultApps)
@@ -558,6 +821,89 @@ class ContainerRepository(private val dao: ContainerDao) {
         )
         dao.insertSystem(newSystem)
         logEvent("container_created", "Created container $name ($imageRef) using $engine", "SUCCESS")
+    }
+
+    suspend fun addCustomApp(
+        containerId: String,
+        appName: String,
+        category: String,
+        command: String,
+        displayType: String,
+        description: String,
+        port: Int = 0
+    ) {
+        val newApp = ContainerAppEntity(
+            id = "app-custom-${UUID.randomUUID().toString().take(8)}",
+            containerId = containerId,
+            name = appName,
+            category = category,
+            command = command,
+            displayType = displayType,
+            iconName = when {
+                displayType.contains("PORT") -> "web"
+                displayType.contains("DISPLAY") -> "desktop"
+                else -> "terminal"
+            },
+            isRunning = false,
+            isUserApp = true,
+            description = description,
+            port = port
+        )
+        dao.insertApp(newApp)
+        logEvent("app_added", "Added custom user application '$appName' to container $containerId", "SUCCESS")
+    }
+
+    suspend fun installCustomRootfs(
+        name: String,
+        fileName: String,
+        fileSizeMb: Long,
+        engine: String,
+        architecture: String = "aarch64",
+        onUpdate: (Float, String) -> Unit
+    ) {
+        val systemId = "rootfs-" + UUID.randomUUID().toString().take(8)
+        logEvent("rootfs_install_started", "Unpacking rootfs tarball $fileName ($fileSizeMb MB) via $engine", "INFO")
+        onUpdate(0.1f, "Verifying tarball integrity and format...")
+        delay(500)
+        onUpdate(0.35f, "Decompressing with NEON SIMD vector pipeline...")
+        delay(600)
+        onUpdate(0.7f, "Configuring fake root /etc/passwd, /dev, /proc emulations...")
+        delay(600)
+        onUpdate(0.95f, "Registering OCI rootfs bundle into Dockbox catalog...")
+        delay(400)
+
+        val newSystem = ContainerSystemEntity(
+            id = systemId,
+            name = name,
+            version = "Custom Rootfs Tarball",
+            flavor = "Custom",
+            architecture = architecture,
+            engineType = engine,
+            isInstalled = true,
+            isRunning = false,
+            desktopEnv = "Root Shell / Ash",
+            diskUsageMb = fileSizeMb * 2,
+            portMappings = "8080:80",
+            neonSimdEnabled = true,
+            statusBadge = "Mini OS / Custom"
+        )
+        dao.insertSystem(newSystem)
+
+        // Seed default user shell app
+        val shellApp = ContainerAppEntity(
+            id = "app-$systemId-shell",
+            containerId = systemId,
+            name = "$name Root Shell",
+            category = "System",
+            command = "/bin/sh",
+            displayType = "CLI Terminal",
+            iconName = "terminal",
+            isUserApp = false,
+            description = "Interactive unprivileged root shell inside $name"
+        )
+        dao.insertApp(shellApp)
+        logEvent("rootfs_installed", "Custom rootfs '$name' ($fileName) successfully installed and provisioned", "SUCCESS")
+        onUpdate(1.0f, "Completed")
     }
 
     suspend fun runConversion(
