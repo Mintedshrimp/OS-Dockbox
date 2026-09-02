@@ -43,8 +43,8 @@ jobs:
         with:
           releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.KEYSTORE }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          alias: ${{ secrets.KEYSTORE-ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
       - run: mv ${{ steps.sign_app.outputs.signedReleaseFile }} ${{ env.REPO_NAME }}-v${{ env.VERSION_NAME }}-${{ github.run_number }}.apk
