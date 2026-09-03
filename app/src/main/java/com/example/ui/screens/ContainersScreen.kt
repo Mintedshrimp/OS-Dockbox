@@ -57,6 +57,8 @@ fun ContainersScreen(
                 "INSTALLED" -> system.isInstalled
                 "PODMAN" -> system.engineType.contains("Podman")
                 "PROOT" -> system.engineType.contains("PRoot")
+                "WINDOWS" -> system.flavor.equals("Windows", ignoreCase = true)
+                "DESKTOP" -> system.desktopEnv != "None" && !system.desktopEnv.contains("Terminal", ignoreCase = true)
                 "RUNNING" -> system.isRunning
                 else -> true
             }
@@ -159,6 +161,8 @@ fun ContainersScreen(
                         "INSTALLED" to "Installed ($installedCount)",
                         "PODMAN" to "Podman Rootless",
                         "PROOT" to "PRoot Distros",
+                        "WINDOWS" to "Windows (${allSystems.count { it.flavor.equals("Windows", ignoreCase = true) }})",
+                        "DESKTOP" to "GUI Desktop (${allSystems.count { it.desktopEnv != "None" && !it.desktopEnv.contains("Terminal", ignoreCase = true) }})",
                         "RUNNING" to "Running (${allSystems.count { it.isRunning }})"
                     )
 
@@ -255,6 +259,13 @@ fun ContainersScreen(
                         }
                         viewModel.selectTab(MainTab.TERMINAL)
                     },
+                    onOpenGui = {
+                        viewModel.setActiveContainer(system.id)
+                        if (!system.isRunning) {
+                            viewModel.toggleSystem(system)
+                        }
+                        viewModel.setDesktopWindowMode(com.example.ui.viewmodel.DesktopWindowMode.FULLSCREEN)
+                    },
                     onOpenConfig = { viewModel.openEditSystem(system) },
                     onInstall = { viewModel.installSystem(system.id) },
                     onToggleRunning = { viewModel.toggleSystem(system) }
@@ -348,6 +359,7 @@ fun ContainerSystemCard(
     system: ContainerSystemEntity,
     isInstalling: Boolean = false,
     onOpenTerminal: () -> Unit,
+    onOpenGui: () -> Unit = {},
     onOpenConfig: () -> Unit,
     onInstall: () -> Unit,
     onToggleRunning: () -> Unit
@@ -490,34 +502,67 @@ fun ContainerSystemCard(
                         )
                     }
                 } else {
-                    Button(
-                        onClick = onOpenTerminal,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = if (system.isRunning) {
-                            ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFDCFCE7),
-                                contentColor = UDroidGreenDark
-                            )
-                        } else {
-                            ButtonDefaults.buttonColors(
-                                containerColor = UDroidGreen,
-                                contentColor = Color.White
-                            )
-                        },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(
-                            imageVector = if (system.isRunning) Icons.Default.Terminal else Icons.Default.PlayArrow,
-                            contentDescription = if (system.isRunning) "Open shell" else "Run container",
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (system.isRunning) "Open" else "Run",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        val hasGui = system.flavor.equals("Windows", ignoreCase = true) ||
+                                (system.desktopEnv != "None" && !system.desktopEnv.contains("Terminal", ignoreCase = true))
+
+                        if (hasGui) {
+                            FilledTonalButton(
+                                onClick = onOpenGui,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = if (system.flavor.equals("Windows", ignoreCase = true)) Color(0xFFE0F2FE) else Color(0xFFF3E8FF),
+                                    contentColor = if (system.flavor.equals("Windows", ignoreCase = true)) Color(0xFF0284C7) else Color(0xFF7E22CE)
+                                ),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (system.flavor.equals("Windows", ignoreCase = true)) Icons.Default.DesktopWindows else Icons.Default.Monitor,
+                                    contentDescription = "Open GUI",
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = if (system.flavor.equals("Windows", ignoreCase = true)) "Win GUI" else "GUI",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onOpenTerminal,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = if (system.isRunning) {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFDCFCE7),
+                                    contentColor = UDroidGreenDark
+                                )
+                            } else {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = UDroidGreen,
+                                    contentColor = Color.White
+                                )
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (system.isRunning) Icons.Default.Terminal else Icons.Default.PlayArrow,
+                                contentDescription = if (system.isRunning) "Open shell" else "Run container",
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (system.isRunning) "Open" else "Run",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

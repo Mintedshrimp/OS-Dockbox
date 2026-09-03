@@ -46,9 +46,11 @@ fun TerminalScreen(
     val allSystems by viewModel.allSystems.collectAsStateWithLifecycle()
     val activeContainerId by viewModel.activeContainerId.collectAsStateWithLifecycle()
 
-    val runningSystems = allSystems.filter { it.isRunning }
-    val installedSystems = allSystems.filter { it.isInstalled }
-    val activeSystem = allSystems.find { it.id == activeContainerId } ?: runningSystems.firstOrNull() ?: installedSystems.firstOrNull()
+    val runningSystems = remember(allSystems) { allSystems.filter { it.isRunning } }
+    val installedSystems = remember(allSystems) { allSystems.filter { it.isInstalled } }
+    val activeSystem = remember(allSystems, activeContainerId) {
+        allSystems.find { it.id == activeContainerId } ?: runningSystems.firstOrNull() ?: installedSystems.firstOrNull()
+    }
 
     val listState = rememberLazyListState()
     var showContainerDropdown by remember { mutableStateOf(false) }
@@ -346,7 +348,7 @@ fun TerminalScreen(
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        items(terminalLines) { line ->
+                        items(terminalLines, key = { it.id }) { line ->
                             TerminalLineView(line = line)
                         }
                     }

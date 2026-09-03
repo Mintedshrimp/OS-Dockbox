@@ -34,6 +34,7 @@ fun DistroIcon(
         "void" -> Color(0xFFDCFCE7) to Color(0xFF2A5934)
         "python" -> Color(0xFFFEF3C7) to Color(0xFFD97706)
         "docker" -> Color(0xFFE0F2FE) to Color(0xFF2496ED)
+        "windows", "win", "wine" -> Color(0xFFE0F2FE) to Color(0xFF0078D7)
         "converted" -> Color(0xFFF3E8FF) to Color(0xFF7E22CE)
         else -> Color(0xFFF1F5F9) to Color(0xFF475569)
     }
@@ -112,6 +113,14 @@ fun DistroIcon(
                 Icon(
                     imageVector = Icons.Default.Widgets,
                     contentDescription = "Docker",
+                    tint = iconColor,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+            "windows", "win", "wine" -> {
+                Icon(
+                    imageVector = Icons.Default.DesktopWindows,
+                    contentDescription = "Windows Container",
                     tint = iconColor,
                     modifier = Modifier.size(26.dp)
                 )

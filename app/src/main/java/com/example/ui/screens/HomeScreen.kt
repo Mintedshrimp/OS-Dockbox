@@ -34,8 +34,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val allSystems by viewModel.allSystems.collectAsStateWithLifecycle()
-    val installed = allSystems.filter { it.isInstalled }
-    val activeSystem = installed.firstOrNull { it.isRunning } ?: installed.firstOrNull()
+    val installed = remember(allSystems) { allSystems.filter { it.isInstalled } }
+    val activeSystem = remember(installed) { installed.firstOrNull { it.isRunning } ?: installed.firstOrNull() }
     val spec by viewModel.systemSpec.collectAsStateWithLifecycle()
 
     var showCompatibilityDialog by remember { mutableStateOf(false) }
@@ -91,6 +91,154 @@ fun HomeScreen(
                         contentDescription = "Refresh status",
                         tint = UDroidTextSecondary
                     )
+                }
+            }
+        }
+
+        // Active Container Live Card (if any container is installed)
+        if (activeSystem != null) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (activeSystem.isRunning) Color(0xFFF0FDF4) else Color.White
+                    ),
+                    border = BorderStroke(
+                        1.5.dp,
+                        if (activeSystem.isRunning) Color(0xFF86EFAC) else UDroidCardBorder
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(if (activeSystem.isRunning) Color(0xFFDCFCE7) else Color(0xFFF1F5F9)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Dns,
+                                        contentDescription = "Container Icon",
+                                        tint = if (activeSystem.isRunning) Color(0xFF15803D) else UDroidTextSecondary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Column {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = activeSystem.name,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = UDroidTextPrimary
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(if (activeSystem.isRunning) Color(0xFFDCFCE7) else Color(0xFFF1F5F9))
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = if (activeSystem.isRunning) "RUNNING" else "STOPPED",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (activeSystem.isRunning) Color(0xFF15803D) else UDroidTextSecondary
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "${activeSystem.engineType} • ${activeSystem.flavor} • ${activeSystem.diskUsageMb} MB",
+                                        fontSize = 12.sp,
+                                        color = UDroidTextSecondary
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    viewModel.toggleSystem(activeSystem)
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (activeSystem.isRunning) Color(0xFFDC2626) else UDroidGreen
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (activeSystem.isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (activeSystem.isRunning) "Stop" else "Start",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.setActiveContainer(activeSystem.id)
+                                    viewModel.selectTab(MainTab.TERMINAL)
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = UDroidGreen),
+                                border = BorderStroke(1.dp, UDroidGreen)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Terminal,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Terminal", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+
+                            FilledTonalButton(
+                                onClick = {
+                                    viewModel.setActiveContainer(activeSystem.id)
+                                    viewModel.setDesktopWindowMode(com.example.ui.viewmodel.DesktopWindowMode.FULLSCREEN)
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = Color(0xFFE0F2FE),
+                                    contentColor = Color(0xFF0369A1)
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DesktopWindows,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("GUI", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                        }
+                    }
                 }
             }
         }

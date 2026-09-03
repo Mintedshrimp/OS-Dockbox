@@ -42,6 +42,7 @@ fun ToolsScreen(
     val dockerPushes by viewModel.dockerPushes.collectAsStateWithLifecycle()
     val portRules by viewModel.portBridgeRules.collectAsStateWithLifecycle()
     val allSystems by viewModel.allSystems.collectAsStateWithLifecycle()
+    val installedSystems = remember(allSystems) { allSystems.filter { it.isInstalled } }
 
     val showConvertDialog by viewModel.showConvertDialog.collectAsStateWithLifecycle()
     val showCreateDiskDialog by viewModel.showCreateDiskDialog.collectAsStateWithLifecycle()
@@ -416,7 +417,7 @@ fun ToolsScreen(
 
     if (showPushDockerDialog) {
         PushDockerDialog(
-            allSystems = allSystems.filter { it.isInstalled },
+            allSystems = installedSystems,
             onDismiss = { viewModel.setShowPushDockerDialog(false) },
             onPush = { img, reg, repo, tag, user ->
                 viewModel.pushDockerImage(img, reg, repo, tag, user)
@@ -426,7 +427,7 @@ fun ToolsScreen(
 
     if (showPortBridgeDialog) {
         AddPortBridgeDialog(
-            allSystems = allSystems.filter { it.isInstalled },
+            allSystems = installedSystems,
             onDismiss = { viewModel.setShowPortBridgeDialog(false) },
             onAdd = { cid, hp, cp, proto ->
                 viewModel.addPortBridgeRule(cid, hp, cp, proto)

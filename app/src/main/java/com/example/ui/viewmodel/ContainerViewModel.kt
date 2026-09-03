@@ -462,10 +462,10 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             val responseLines = processCommand(trimmed, activeSystem)
-            for (line in responseLines) {
-                appendTerminalLine(line)
-            }
-            appendTerminalLine(TerminalLine(prompt, TerminalLineType.OUTPUT))
+            val combined = ArrayList<TerminalLine>(responseLines.size + 1)
+            combined.addAll(responseLines)
+            combined.add(TerminalLine(prompt, TerminalLineType.OUTPUT))
+            appendTerminalLines(combined)
         }
     }
 
@@ -664,14 +664,19 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun appendTerminalLine(line: TerminalLine) {
-        val current = _terminalLines.value.toMutableList()
-        current.add(line)
-        if (current.size > 200) {
-            _terminalLines.value = current.takeLast(200)
+    private fun appendTerminalLines(lines: List<TerminalLine>) {
+        if (lines.isEmpty()) return
+        val current = _terminalLines.value
+        val combined = if (current.size + lines.size > 200) {
+            (current + lines).takeLast(200)
         } else {
-            _terminalLines.value = current
+            current + lines
         }
+        _terminalLines.value = combined
+    }
+
+    private fun appendTerminalLine(line: TerminalLine) {
+        appendTerminalLines(listOf(line))
     }
 
     fun runNeonBenchmark(): String {
@@ -707,7 +712,7 @@ class ContainerViewModel(application: Application) : AndroidViewModel(applicatio
         _installStatusText.value = "Starting installation..."
 
         viewModelScope.launch {
-            repository.installSystem(systemId, this) { progress, msg ->
+            repository.installSystem(systemId) { progress, msg ->
                 _installProgress.value = progress
                 _installStatusText.value = msg
             }

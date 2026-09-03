@@ -88,4 +88,7 @@ interface ContainerDao {
 
     @Query("DELETE FROM supervisor_logs")
     suspend fun clearLogs()
+
+    @Query("DELETE FROM supervisor_logs WHERE id NOT IN (SELECT id FROM supervisor_logs ORDER BY epochMillis DESC LIMIT 100)")
+    suspend fun pruneOldLogs()
 }

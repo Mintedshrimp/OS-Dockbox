@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.ContainerViewModel
 import com.example.ui.viewmodel.DesktopWindowMode
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.roundToInt
 
 @Composable
@@ -38,15 +39,21 @@ fun FloatingDesktopOverlay(
     onEnterSystemPip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val windowMode by viewModel.desktopWindowMode.collectAsState()
-    val activeApp by viewModel.desktopActiveWindow.collectAsState()
-    val selectedWm by viewModel.desktopSelectedWm.collectAsState()
-    val resolution by viewModel.desktopResolution.collectAsState()
-    val touchMode by viewModel.desktopTouchMode.collectAsState()
-    val allSystems by viewModel.allSystems.collectAsState()
-    val activeContainerId by viewModel.activeContainerId.collectAsState()
+    val windowMode by viewModel.desktopWindowMode.collectAsStateWithLifecycle()
+    val activeApp by viewModel.desktopActiveWindow.collectAsStateWithLifecycle()
+    val selectedWm by viewModel.desktopSelectedWm.collectAsStateWithLifecycle()
+    val resolution by viewModel.desktopResolution.collectAsStateWithLifecycle()
+    val touchMode by viewModel.desktopTouchMode.collectAsStateWithLifecycle()
+    val allSystems by viewModel.allSystems.collectAsStateWithLifecycle()
+    val activeContainerId by viewModel.activeContainerId.collectAsStateWithLifecycle()
 
-    val activeDistroName = allSystems.find { it.id == activeContainerId }?.name ?: "Debian 13 (Trixie)"
+    val activeDistroName = remember(allSystems, activeContainerId) {
+        allSystems.find { it.id == activeContainerId }?.name ?: "Debian 13 (Trixie)"
+    }
+
+    val activeDistroFlavor = remember(allSystems, activeContainerId) {
+        allSystems.find { it.id == activeContainerId }?.flavor ?: "Debian"
+    }
 
     if (windowMode == DesktopWindowMode.HIDDEN) return
 
@@ -65,6 +72,7 @@ fun FloatingDesktopOverlay(
                 onSwitchMode = { mode -> viewModel.setDesktopWindowMode(mode) },
                 onTriggerSystemPip = onEnterSystemPip,
                 activeDistro = activeDistroName,
+                containerFlavor = activeDistroFlavor,
                 activeAppLaunch = activeApp,
                 selectedWm = selectedWm,
                 onWmChange = { viewModel.setDesktopSelectedWm(it) },
@@ -200,7 +208,13 @@ fun FloatingDesktopOverlay(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            listOf("Chromium", "Terminal", "VS Code", "Files").forEach { app ->
+                            val ribbonApps = if (activeDistroFlavor.equals("Windows", ignoreCase = true)) {
+                                listOf("File Explorer", "Wine cmd", "Edge / Web", "TaskMgr")
+                            } else {
+                                listOf("Chromium", "Terminal", "VS Code", "Files")
+                            }
+
+                            ribbonApps.forEach { app ->
                                 val isCurrent = activeApp == app
                                 Box(
                                     modifier = Modifier
@@ -219,7 +233,7 @@ fun FloatingDesktopOverlay(
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = ":0 60fps",
+                                text = if (activeDistroFlavor.equals("Windows", ignoreCase = true)) "Wine 60fps" else ":0 60fps",
                                 fontSize = 9.sp,
                                 fontFamily = FontFamily.Monospace,
                                 color = Color(0xFF10B981)
@@ -538,6 +552,51 @@ fun DesktopContentRenderer(
                         fontSize = if (isCompact) 8.sp else 11.sp,
                         color = Color(0xFFE2E8F0)
                     )
+                }
+            }
+
+            "File Explorer" -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF1E293B))
+                        .padding(if (isCompact) 6.dp else 10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.Storage, contentDescription = null, tint = Color(0xFF0078D4), modifier = Modifier.size(14.dp))
+                        Text("C:\\Program Files", fontSize = if (isCompact) 9.sp else 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Local Disk (C:) · Wine 9.0 ARM64 Virtual Filesystem", fontSize = if (isCompact) 8.sp else 9.sp, color = UDroidTextMuted)
+                }
+            }
+
+            "Wine cmd" -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF0C0C0C))
+                        .padding(if (isCompact) 6.dp else 10.dp)
+                ) {
+                    Text("C:\\Users\\User> dir C:\\", fontFamily = FontFamily.Monospace, fontSize = if (isCompact) 8.sp else 10.sp, color = Color.White)
+                    Text("  <DIR>  Windows", fontFamily = FontFamily.Monospace, fontSize = if (isCompact) 8.sp else 10.sp, color = Color(0xFF00E5FF))
+                    Text("  <DIR>  Program Files", fontFamily = FontFamily.Monospace, fontSize = if (isCompact) 8.sp else 10.sp, color = Color(0xFF00E5FF))
+                    Text("C:\\Users\\User> _", fontFamily = FontFamily.Monospace, fontSize = if (isCompact) 8.sp else 10.sp, color = Color(0xFF22C55E))
+                }
+            }
+
+            "Edge / Web" -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF1E293B))
+                        .padding(if (isCompact) 6.dp else 10.dp)
+                ) {
+                    Text("Microsoft Edge (Wine Direct3D/Vulkan)", fontSize = if (isCompact) 9.sp else 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                    Text("DXVK Translation: ACTIVE @ 60 FPS", fontSize = if (isCompact) 8.sp else 10.sp, color = UDroidGreen)
                 }
             }
 

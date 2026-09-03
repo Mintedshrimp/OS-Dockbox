@@ -33,7 +33,8 @@ data class SystemSpec(
 
 data class TerminalLine(
     val text: String,
-    val type: TerminalLineType = TerminalLineType.OUTPUT
+    val type: TerminalLineType = TerminalLineType.OUTPUT,
+    val id: String = java.util.UUID.randomUUID().toString()
 )
 
 enum class TerminalLineType {

@@ -26,9 +26,9 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
+            distribution: temurin
+            java-version: 21
+            cache: gradle
           
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -39,29 +39,70 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build Release APK
-        shell: bash
-        run: ./gradlew assembleRelease
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE }}
-          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      
-      - name: Sign APK
+      - name: Create environment configuration
         run: |
-          echo "${{ secrets.KEYSTORE }}" | base64 -d > keystore.jks
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore keystore.jks \
-            -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
-            -keypass ${{ secrets.KEY_PASSWORD }} \
-            app/build/outputs/apk/release/app-release-unsigned.apk \
-            ${{ secrets.KEYSTORE_ALIAS }}
-          rm keystore.jks
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || touch .env
+          fi
 
-      - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release-unsigned.apk ${{ env.REPO_NAME }}-v${{ env.VERSION_NAME }}-${{ github.run_number }}.apk
-        
+      - name: Prepare Keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE }}" ]; then
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > my-upload-key.jks
+            echo "KEYSTORE_PATH=${{ github.workspace }}/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          elif [ -f "debug.keystore.base64" ]; then
+            base64 -d debug.keystore.base64 > my-upload-key.jks
+            echo "KEYSTORE_PATH=${{ github.workspace }}/my-upload-key.jks" >> $GITHUB_ENV
+            echo "STORE_PASSWORD=android" >> $GITHUB_ENV
+            echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+          fi
+
+      - name: Build APK
+        shell: bash
+        run: |
+          if [ -f "${{ env.KEYSTORE_PATH }}" ]; then
+            echo "Building signed Release APK..."
+            ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            echo "No keystore provided, building Debug APK..."
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          fi
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ env.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ env.KEY_PASSWORD }}
+
+      - name: Sign Release APK (if unsigned)
+        run: |
+          UNSIGNED_APK=$(find app/build/outputs/apk -name "*unsigned*.apk" | head -n 1)
+          if [ -n "$UNSIGNED_APK" ] && [ -n "${{ secrets.KEYSTORE }}" ]; then
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > keystore.jks
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore keystore.jks \
+              -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
+              -keypass ${{ secrets.KEY_PASSWORD }} \
+              "$UNSIGNED_APK" \
+              ${{ secrets.KEYSTORE_ALIAS }}
+            rm -f keystore.jks
+          fi
+
+      - name: Rename Release APK
+        run: |
+          APK_FILE=$(find app/build/outputs/apk -name "*.apk" ! -name "*unsigned*" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          fi
+          if [ -n "$APK_FILE" ]; then
+            DEST_NAME="${{ env.REPO_NAME }}-v${{ env.VERSION_NAME }}-${{ github.run_number }}.apk"
+            cp "$APK_FILE" "$DEST_NAME"
+            echo "Prepared release artifact: $DEST_NAME from $APK_FILE"
+          else
+            echo "Error: No APK file generated!"
+            exit 1
+          fi
+
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:

@@ -324,6 +324,46 @@ class ContainerRepository(private val dao: ContainerDao) {
                     downloads = "5.1M",
                     likes = "31.9k",
                     popularity = "99%"
+                ),
+                ContainerSystemEntity(
+                    id = "windows-11-arm",
+                    name = "Windows 11 ARM64",
+                    version = "24H2 Build 26100 (ARM64)",
+                    flavor = "Windows",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = true,
+                    desktopEnv = "Windows Aero Desktop",
+                    diskUsageMb = 0,
+                    portMappings = "3389:3389, 5900:5900",
+                    neonSimdEnabled = true,
+                    statusBadge = "Windows GUI (Dedicated)",
+                    author = "Microsoft / Dockbox OCI",
+                    downloads = "7.8M",
+                    likes = "62.1k",
+                    popularity = "99%"
+                ),
+                ContainerSystemEntity(
+                    id = "windows-wine-gaming",
+                    name = "Windows Gaming & Wine",
+                    version = "Wine 9.0 Pro / DirectX 12",
+                    flavor = "Windows",
+                    architecture = "aarch64",
+                    engineType = "Podman Rootless",
+                    isInstalled = false,
+                    isRunning = false,
+                    isRecommended = true,
+                    desktopEnv = "Windows GUI / Direct3D",
+                    diskUsageMb = 0,
+                    portMappings = "3389:3389",
+                    neonSimdEnabled = true,
+                    statusBadge = "Gamepad & Direct3D",
+                    author = "WineHQ / Box64 Team",
+                    downloads = "5.2M",
+                    likes = "48.6k",
+                    popularity = "98%"
                 )
             )
             dao.insertSystems(defaultSystems)
@@ -675,6 +715,7 @@ class ContainerRepository(private val dao: ContainerDao) {
                 timestamp = timeFormat.format(Date())
             )
         )
+        dao.pruneOldLogs()
     }
 
     suspend fun toggleSystemRunning(id: String, currentlyRunning: Boolean) {
@@ -697,7 +738,7 @@ class ContainerRepository(private val dao: ContainerDao) {
         }
     }
 
-    suspend fun installSystem(systemId: String, scope: CoroutineScope, onProgress: (Float, String) -> Unit) {
+    suspend fun installSystem(systemId: String, onProgress: (Float, String) -> Unit) {
         logEvent("oci_pull_start", "Pulling layer image for $systemId from registry", "INFO")
         val steps = listOf(
             0.15f to "Resolving manifest from registry (docker.io / ghcr.io)...",
